@@ -1,43 +1,130 @@
-PouchDB Plugin Seed
+PouchDB Load
 =====
 
-[![Build Status](https://travis-ci.org/pouchdb/plugin-seed.svg)](https://travis-ci.org/pouchdb/plugin-seed)
+[![Build Status](https://travis-ci.org/nolanlawson/pouchdb-load.svg)](https://travis-ci.org/nolanlawson/pouchdb-load)
 
-Fork this project to build your first PouchDB plugin.  It contains everything you need to test in Node, WebSQL, and IndexedDB.  It also includes a Travis config file so you
-can automatically run the tests in Travis.
+Client-side tools for loading a dump from a CouchDB/PouchDB database.
+
+For dumping, check out [pouchdb-dump-cli](https://github.com/nolanlawson/pouchdb-dump-cli) to dump from the command line, or [pouchdb-replication-stream](https://github.com/nolanlawson/pouchdb-replication-stream) to dump from within your Node.js application.
+
+This method is typically much faster than standard replication, because it uses fewer HTTP requests. So it's a great way to quickly load an initial state for your database. 
+
+Usage
+--------
+
+To use this plugin, include it after `pouchdb.js` in your HTML page:
+
+```html
+<script src="pouchdb.js"></script>
+<script src="pouchdb.load.js"></script>
+```
+
+Or install from Bower:
+
+```
+bower install pouchdb-load
+```
+
+Or to use it in Node.js, just npm install it:
+
+```
+npm install pouchdb-load
+```
+
+And then attach it to the `PouchDB` object:
+
+```js
+var PouchDB = require('pouchdb');
+PouchDB.plugin(require('pouchdb-load'));
+```
+
+API
+----------
+
+This plugin exposes a single method on your database, `load()`:
+
+### db.load(url [, callback])
+
+This method returns a Promise or calls your callback, if you prefer the callback style.
+
+You can give it a URL pointing to a single dump file:
+
+```js
+var db = new PouchDB('my-awesome-db');
+db.load('http://example.com/my-dump-file.txt').then(function () {
+  // done loading!
+}).catch(function (err) {
+  // HTTP error or something like that
+});
+```
+
+This will read the entire file into memory, though. Assuming you used the `--split` option when you dumped your database, you can also load multiple files by using `Promise.all`. For instance, let's say you had 5 files, named 
+`'my-dump-file_00000000.txt'` through `'my-dump-file_00000004.txt'`. You would do:
+
+```js
+var dumpFiles = [
+  'my-dump-file_00000000.txt',
+  'my-dump-file_00000001.txt',
+  'my-dump-file_00000002.txt',
+  'my-dump-file_00000003.txt',
+  'my-dump-file_00000004.txt',
+];
+
+PouchDB.utils.Promise.all(dumpFiles.map(function (dumpFile) {
+  return db.load('http://example.com/' + dumpFile);
+})).then(function () {
+  // done loading!
+}).catch(function (err) {
+  // HTTP error or something like that
+});
+```
+
+This will load them all simultaneously. You can also load them all in a series:
+
+```js
+var series = PouchDB.utils.Promise.resolve();
+
+dumpFiles.forEach(function (dumpFile) {
+  series = series.then(function () {
+    return db.load('http://example.com/' + dumpFile);
+  });
+});
+
+series.then(function () {
+  // done loading!
+}).catch(function (err) {
+  // HTTP error or something like that
+});
+```
+
+#### Notes on idempotency
+
+The `load()` operation is *idempotent*, meaning that you can run it over and over again, and it won't create duplicate documents in the target database. However, this is inefficient to run every time your user loads your app. So if you'd like, you can use "local documents" to remember whether or not this database has already been loaded:
+
+```js
+db.get('_local/initial_load_complete').catch(function (err) {
+  if (err !== 404) { // 404 means not found
+    throw err;
+  }
+  db.load(/* ... */).then(function () {
+    return db.put({_id: '_local/initial_load_complete'});
+  });
+}).then(function () {
+  // at this point, we are sure that 
+  // initial replication is complete
+}).catch(function (err) {
+  // handle unexpected errors
+});
+```
+
+This code first checks for a local document called `'_local/initial_load_complete'`. If the document is not found, then it calls `dump()`, then puts the local doc to mark that it's complete. Else it finishes.
+
+(*Local documents* are non-replicated PouchDB/CouchDB documents that are useful for storing local state or configuration files. To create a local document, you simply prefix `'_local/'` to the document `_id`.)
 
 Building
 ----
     npm install
     npm run build
-
-Your plugin is now located at `dist/pouchdb.mypluginname.js` and `dist/pouchdb.mypluginname.min.js` and is ready for distribution.
-
-Getting Started
--------
-
-**First**, change the `name` in `package.json` to whatever you want to call your plugin.  Change the `build` script so that it writes to the desired filename (e.g. `pouchdb.mypluginname.js`).  Also, change the authors, description, git repo, etc.
-
-**Next**, modify the `index.js` to do whatever you want your plugin to do.  Right now it just adds a `pouch.sayHello()` function that says hello:
-
-```js
-exports.sayHello = utils.toPromise(function (callback) {
-  callback(null, 'hello');
-});
-```
-
-**Optionally**, you can add some tests in `tests/test.js`. These tests will be run both in the local database and a remote CouchDB, which is expected to be running at localhost:5984 in "Admin party" mode.
-
-The sample test is:
-
-```js
-
-it('should say hello', function () {
-  return db.sayHello().then(function (response) {
-    response.should.equal('hello');
-  });
-});
-```
 
 Testing
 ----
@@ -52,15 +139,6 @@ You can also check for 100% code coverage using:
 
     npm run coverage
 
-If you don't like the coverage results, change the values from 100 to something else in `package.json`, or add `/*istanbul ignore */` comments.
-
-
-If you have mocha installed globally you can run single test with:
-```
-TEST_DB=local mocha --reporter spec --grep search_phrase
-```
-
-The `TEST_DB` environment variable specifies the database that PouchDB should use (see `package.json`).
 
 ### In the browser
 
@@ -76,28 +154,3 @@ You can run e.g.
     CLIENT=selenium:phantomjs npm test
 
 This will run the tests automatically and the process will exit with a 0 or a 1 when it's done. Firefox uses IndexedDB, and PhantomJS uses WebSQL.
-
-What to tell your users
---------
-
-Below is some boilerplate you can use for when you want a real README for your users.
-
-To use this plugin, include it after `pouchdb.js` in your HTML page:
-
-```html
-<script src="pouchdb.js"></script>
-<script src="pouchdb.mypluginname.js"></script>
-```
-
-Or to use it in Node.js, just npm install it:
-
-```
-npm install pouchdb-myplugin
-```
-
-And then attach it to the `PouchDB` object:
-
-```js
-var PouchDB = require('pouchdb');
-PouchDB.plugin(require('pouchdb-myplugin'));
-```

@@ -3,18 +3,12 @@
 
 var Pouch = require('pouchdb');
 
-//
-// your plugin goes here
-//
-var helloPlugin = require('../');
-Pouch.plugin(helloPlugin);
+var plugin = require('../lib');
+Pouch.plugin(plugin);
 
 var chai = require('chai');
 chai.use(require("chai-as-promised"));
 
-//
-// more variables you might want
-//
 chai.should(); // var should = chai.should();
 require('bluebird'); // var Promise = require('bluebird');
 
@@ -36,16 +30,22 @@ function tests(dbName, dbType) {
   var db;
 
   beforeEach(function () {
+    this.timeout(30000);
     db = new Pouch(dbName);
     return db;
   });
   afterEach(function () {
+    this.timeout(30000);
     return Pouch.destroy(dbName);
   });
-  describe(dbType + ': hello test suite', function () {
-    it('should say hello', function () {
-      return db.sayHello().then(function (response) {
-        response.should.equal('hello');
+  describe(dbType + ': basic dump', function () {
+    this.timeout(30000);
+
+    it('should load the dumpfile', function () {
+      return db.load('/test/dumps/bloggr.txt').then(function () {
+        return db.info();
+      }).then(function (info) {
+        info.doc_count.should.equal(10);
       });
     });
   });
