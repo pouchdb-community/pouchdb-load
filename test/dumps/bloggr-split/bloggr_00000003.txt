@@ -1,0 +1,11 @@
+{"version":"1.0.0","db_type":"http","start_time":"2014-11-02T15:05:48.322Z","db_info":{"db_name":"bloggr","doc_count":12,"doc_del_count":34,"update_seq":47,"purge_seq":0,"compact_running":false,"disk_size":1507439,"data_size":16035,"instance_start_time":"1414940680060991","disk_format_version":6,"committed_update_seq":47,"host":"http://localhost:5984/bloggr/","auto_compaction":false}}
+{"docs":[{"_id":"post_2_29300819-347C-6DB9-9BCE-4AF73DA1F52C","_rev":"5-db688a6fbba1b4ace40a67135b1b696b","_deleted":true,"_revisions":{"start":5,"ids":["db688a6fbba1b4ace40a67135b1b696b","1ad824e05e308b8c54512211afa54967","6e1eb9f88ca8e2da80d10ffc688c7564","44f94891458a73c14eecef69dd3f87f0","df6f07ff3030c6bb3da1e1578a861a03"]}},{"_id":"post_2_29300819-347C-6DB9-9BCE-4AF73DA1F52C","_rev":"4-f1587d714a35e98a9c3c96051f5b9560","_deleted":true,"_revisions":{"start":4,"ids":["f1587d714a35e98a9c3c96051f5b9560","6e1eb9f88ca8e2da80d10ffc688c7564","44f94891458a73c14eecef69dd3f87f0","df6f07ff3030c6bb3da1e1578a861a03"]}}]}
+{"seq":15}
+{"docs":[{"_id":"post_2_32F6809C-9A39-69FA-80A8-336403F8BE4F","_rev":"2-93da7189be5f5c4db8041fcfb7563f49","_deleted":true,"_revisions":{"start":2,"ids":["93da7189be5f5c4db8041fcfb7563f49","3b429fa6f80bd27d9ac8483c1ddf52be"]}}]}
+{"seq":16}
+{"docs":[{"_id":"post_2_34AD7575-A68E-3B83-AB52-C85D665187EC","_rev":"2-c3102a3a11571cfadf989d9c79c25d43","_deleted":true,"_revisions":{"start":2,"ids":["c3102a3a11571cfadf989d9c79c25d43","e8acdb206069af78362fd8d7e86f296d"]}}]}
+{"seq":17}
+{"docs":[{"_id":"post_2_38ECC085-5338-74AA-9D3C-26F616BEFC2C","_rev":"4-5444a35d7546f816c3d95e6a39b8b538","_deleted":true,"_revisions":{"start":4,"ids":["5444a35d7546f816c3d95e6a39b8b538","867b0b6a513f829c67a08be4e6b4443c","a29e9a336705d0590f47403d1cdc4f3f","04e366ea6a6db8eb7549d480b47c4dfd"]}}]}
+{"seq":18}
+{"docs":[{"_id":"post_2_3C86DB35-6684-A6BD-B1B5-733ACB66C004","_rev":"3-b599ff7d393cc334cb279f93a7c2761e","_deleted":true,"_revisions":{"start":3,"ids":["b599ff7d393cc334cb279f93a7c2761e","eb49bbba125b10da20d82121bbb337a1","c3484ac3724b074f2931144cdccd1f9a"]}}]}
+{"seq":19}

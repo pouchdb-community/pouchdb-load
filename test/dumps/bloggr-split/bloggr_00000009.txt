@@ -1,0 +1,7 @@
+{"version":"1.0.0","db_type":"http","start_time":"2014-11-02T15:05:48.322Z","db_info":{"db_name":"bloggr","doc_count":12,"doc_del_count":34,"update_seq":47,"purge_seq":0,"compact_running":false,"disk_size":1507439,"data_size":16035,"instance_start_time":"1414940680060991","disk_format_version":6,"committed_update_seq":47,"host":"http://localhost:5984/bloggr/","auto_compaction":false}}
+{"docs":[{"_id":"post_2_62256493-515C-4D55-9250-248A04EF1228","_rev":"2-2dbb603e8b1681fbb5c2907068ad8022","_deleted":true,"_revisions":{"start":2,"ids":["2dbb603e8b1681fbb5c2907068ad8022","b517c55cb783018ef1e58b632d349bfc"]}}]}
+{"seq":45}
+{"docs":[{"_id":"post_2_BB952A26-E0B8-A51E-85E5-301FA399DF54","_rev":"3-3750a4134f1ce8a5f5f5b994134a7901","_deleted":true,"_revisions":{"start":3,"ids":["3750a4134f1ce8a5f5f5b994134a7901","f1ef8ac857de7afddba570ed57088aee","42b4acd45da731c85bd54b8684798c44"]}}]}
+{"seq":46}
+{"docs":[{"_id":"post_2_D07E57DA-A5C9-F6FF-87AB-A3047635C7C1","_rev":"3-71a1646670482b0bd47df196a7c4e422","_deleted":true,"_revisions":{"start":3,"ids":["71a1646670482b0bd47df196a7c4e422","3f184b150fef15433803bfdc9140401c","f1f8c894dccdeb6cb7403e255132cbf7"]}}]}
+{"seq":47}

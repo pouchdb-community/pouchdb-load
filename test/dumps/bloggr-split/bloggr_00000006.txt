@@ -1,0 +1,11 @@
+{"version":"1.0.0","db_type":"http","start_time":"2014-11-02T15:05:48.322Z","db_info":{"db_name":"bloggr","doc_count":12,"doc_del_count":34,"update_seq":47,"purge_seq":0,"compact_running":false,"disk_size":1507439,"data_size":16035,"instance_start_time":"1414940680060991","disk_format_version":6,"committed_update_seq":47,"host":"http://localhost:5984/bloggr/","auto_compaction":false}}
+{"docs":[{"_id":"post_2_EE35EA37-019C-13F7-9CAF-EAF145803730","_rev":"3-f6d28cdc59c2d49667201db50c94e113","_revisions":{"start":3,"ids":["f6d28cdc59c2d49667201db50c94e113","914bf7bba7378567299d6c94e7f91c93","7fdf8f326dbc9c065a247bc7925669a0"]}}, {"_id":"post_2_EE35EA37-019C-13F7-9CAF-EAF145803730","_rev":"4-70b264e39c4eb4b3afa74c038b0c5275","_deleted":true,"_revisions":{"start":4,"ids":["70b264e39c4eb4b3afa74c038b0c5275","9f45415c0943d81b6729b10a3611da7f","914bf7bba7378567299d6c94e7f91c93","7fdf8f326dbc9c065a247bc7925669a0"]}}]}
+{"seq":30}
+{"docs":[{"_id":"post_2_F82CC173-F241-173B-8DF3-AFD46F2277CB","_rev":"3-f46a883e789fa6234471c0c47c4d4620","_deleted":true,"_revisions":{"start":3,"ids":["f46a883e789fa6234471c0c47c4d4620","7443eef5aefc54dc02a083e3bd89430b","1c86c987c765dbd8855cc285eb764adf"]}}]}
+{"seq":31}
+{"docs":[{"_id":"post_2_FC5E6C16-B80B-1BB4-A699-D0D34F12B665","_rev":"4-77b2ae6128799ed8d1e5f43981a3e08d","_deleted":true,"_revisions":{"start":4,"ids":["77b2ae6128799ed8d1e5f43981a3e08d","361c5434ccfd58c4e83a499fc177f01e","04e9b93b990c5b9a65b3f80134282467","22f27b877c2a072d892a22d55a4681bb"]}}]}
+{"seq":32}
+{"docs":[{"_id":"post_2_FF139BCF-0AA7-9E9B-97A5-68F3D1DB377C","_rev":"3-6460422786812a636ff923368d5f384b","_deleted":true,"_revisions":{"start":3,"ids":["6460422786812a636ff923368d5f384b","31229c58043e7c8612d98c183758736f","8e6b37f2bc4d9aa44b19c42c44322c94"]}}]}
+{"seq":33}
+{"docs":[{"_id":"post_2_063EE08E-CCA0-5AF9-A20D-12225039A111","_rev":"2-5b74afa4a5982664aeee1ce50fd1b992","_revisions":{"start":2,"ids":["5b74afa4a5982664aeee1ce50fd1b992","b733bd90a85f137ca669f523aa1f8820"]},"data":{"title":"Inga","author":"C.L.I. Ember","date":"2014-09-14T19:36:18.902Z","excerpt":"","body":""}}]}
+{"seq":34}

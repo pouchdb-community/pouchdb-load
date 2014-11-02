@@ -1,0 +1,11 @@
+{"version":"1.0.0","db_type":"http","start_time":"2014-11-02T15:05:48.322Z","db_info":{"db_name":"bloggr","doc_count":12,"doc_del_count":34,"update_seq":47,"purge_seq":0,"compact_running":false,"disk_size":1507439,"data_size":16035,"instance_start_time":"1414940680060991","disk_format_version":6,"committed_update_seq":47,"host":"http://localhost:5984/bloggr/","auto_compaction":false}}
+{"docs":[{"_id":"post_2_48766605-9E2D-1DB7-BC69-DBDD51818526","_rev":"3-192a54155d9ab00a9299a86ebe145dc8","_deleted":true,"_revisions":{"start":3,"ids":["192a54155d9ab00a9299a86ebe145dc8","53b5d7fa5b09eed154f8f8d9b2b19ccd","6750ddf5d1e7701d1381feb6bd6f870f"]}}]}
+{"seq":20}
+{"docs":[{"_id":"post_2_5D319FAD-BA2F-23D7-897B-C646AC77E7BB","_rev":"2-003118e79846d51c830c4e3714b70980","_deleted":true,"_revisions":{"start":2,"ids":["003118e79846d51c830c4e3714b70980","7cf2446a9e2905c1288eb05627fe0a52"]}}]}
+{"seq":21}
+{"docs":[{"_id":"post_2_C1D360E1-B3DF-5442-B824-63B0FF7D6DF7","_rev":"1-bd7d71a7427263dd88c6da0765df81e5","data":{"title":"","author":"C.L.I. Ember","date":"2014-09-14T19:31:29.971Z","excerpt":"","body":""}}]}
+{"seq":22}
+{"docs":[{"_id":"post_2_CDEF75A2-4C46-F555-BDC1-0C7230628C1C","_rev":"4-4a896540f30e6c489730cb4e5f771142","_deleted":true,"_revisions":{"start":4,"ids":["4a896540f30e6c489730cb4e5f771142","b211c344a2c3cd0debfd86ae8e067921","2049c30ccb2165079af25d098c868cf6","9234f8957e636cddeb73a40151189a84"]}}]}
+{"seq":23}
+{"docs":[{"_id":"post_2_0E305068-30CE-E975-8988-F924BF4A8B3A","_rev":"3-c0698c2258da158ab2d94eb7b6d6ba05","_deleted":true,"_revisions":{"start":3,"ids":["c0698c2258da158ab2d94eb7b6d6ba05","5497d8b73ad7177d1500486c2593dd28","1903312e1eb7fb041dc7705b14a7c26c"]}}]}
+{"seq":24}

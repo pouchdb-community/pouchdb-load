@@ -69,6 +69,29 @@ function tests(dbName, dbType) {
       });
     });
 
+    it('should load the dumpfile 2', function () {
+      var url = getUrl('bloggr2.txt');
+      return db.load(url).then(function () {
+        return db.info();
+      }).then(function (info) {
+        info.doc_count.should.equal(12);
+      });
+    });
+
+    it('should load the dumpfile 3', function () {
+      var urls = [];
+      for (var i = 0; i < 10; i++) {
+        urls.push(getUrl('bloggr-split/bloggr_0000000' + i + '.txt'));
+      }
+      return Promise.all(urls.map(function (url) {
+        return db.load(url);
+      })).then(function () {
+        return db.info();
+      }).then(function (info) {
+        info.doc_count.should.equal(12);
+      });
+    });
+
     it('should load the dumpfile, with a callback', function (done) {
       var url = getUrl('bloggr.txt');
       db.load(url, function () {
