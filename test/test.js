@@ -21,10 +21,14 @@ if (process.browser) {
   dbs = process.env.TEST_DB;
 }
 
-dbs.split(',').forEach(function (db) {
+dbs = dbs.split(',');
+
+dbs.forEach(function (db) {
   var dbType = /^http/.test(db) ? 'http' : 'local';
   tests(db, dbType);
 });
+
+clientServerTests();
 
 function getUrl(filename) {
   if (typeof process === 'undefined' || process.browser) {
@@ -117,6 +121,112 @@ function tests(dbName, dbType) {
         throw new Error('should not be here');
       }, function (err) {
         should.exist(err);
+      });
+    });
+  });
+}
+
+
+function clientServerTests(dbName) {
+
+  var db;
+  var remote;
+  var server;
+
+  describe('client-server: basic', function () {
+    this.timeout(30000);
+
+    beforeEach(function () {
+      this.timeout(30000);
+      db = new Pouch(dbs[0]);
+      remote = new Pouch(dbs[1]);
+      if (typeof process !== 'undefined' && !process.browser) {
+        server = httpServer.createServer();
+        return new Promise(function (resolve) {
+          server.listen(8001, resolve);
+        });
+      }
+    });
+    afterEach(function () {
+      this.timeout(30000);
+      return Pouch.destroy(dbs[0]).then(function () {
+        return Pouch.destroy(dbs[1]);
+      }).then(function () {
+        if (typeof process !== 'undefined'  && !process.browser) {
+          server.close();
+        }
+      });
+    });
+
+    it('should load the dumpfile', function () {
+      var url = getUrl('bloggr.txt');
+      return db.load(url).then(function () {
+        return remote.load(url);
+      }).then(function () {
+        return db.info();
+      }).then(function (info) {
+        info.doc_count.should.equal(12);
+        return remote.info();
+      }).then(function (info) {
+        info.doc_count.should.equal(12);
+      });
+    });
+
+    it('transitions from initial to regular replication', function () {
+      var url = getUrl('foobar.txt');
+      var docs1 = [
+        {"_id": "foo", "_rev": "1-x"},
+        {"_id": "bar", "_rev": "1-y"},
+        {"_id": "baz", "_rev": "1-w"}
+      ];
+      var docs2 = [
+        {
+          "_id": "baz",
+          "_rev": "2-z",
+          "_deleted": true,
+          "_revisions": {"start": 2, "ids": ["z", "w"]}
+        }
+      ];
+      return remote.bulkDocs(docs1, {new_edits: false}).then(function () {
+        return remote.bulkDocs(docs2, {new_edits: false});
+      }).then(function () {
+        return db.load(url, {proxy: dbs[1]});
+      }).then(function () {
+        return db.info();
+      }).then(function (info) {
+        info.doc_count.should.equal(3);
+      }).then(function () {
+        return db.replicate.from(remote);
+      }).then(function () {
+        return db.info();
+      }).then(function (info) {
+        info.doc_count.should.equal(2);
+      });
+    });
+
+    it('only fetches with since=seq when transitioning', function () {
+      var url = getUrl('foobar.txt');
+      var docs = [
+        {"_id": "quux", "_rev": "1-q"}
+      ];
+      return remote.bulkDocs(docs, {new_edits: false}).then(function () {
+        return db.load(url, {proxy: dbs[1]});
+      }).then(function () {
+        return db.info();
+      }).then(function (info) {
+        info.doc_count.should.equal(3);
+      }).then(function () {
+        return db.replicate.from(remote);
+      }).then(function () {
+        return db.info();
+      }).then(function (info) {
+        info.doc_count.should.equal(3, 'quux never loaded, because its seq is 1');
+        return db.allDocs({keys: ['quux']});
+      }).then(function (res) {
+        should.exist(res.rows[0].error, 'quux not in local');
+        return remote.allDocs({keys: ['quux']});
+      }).then(function (res) {
+        should.not.exist(res.rows[0].error, 'quux in remote');
       });
     });
   });

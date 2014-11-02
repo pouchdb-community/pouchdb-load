@@ -37,7 +37,8 @@
     "inherits": "~2.0.1",
     "lie": "^2.6.0",
     "pouchdb-extend": "^0.1.2",
-    "request": "^2.47.0"
+    "request": "^2.47.0",
+    "spark-md5": "0.0.5"
   },
   "devDependencies": {
     "bluebird": "^1.0.7",
@@ -63,6 +64,7 @@
   },
   "browser": {
     "./lib/ajax.js": "./lib/ajax-browser.js",
-    "http-server": false
+    "http-server": false,
+    "crypto": false
   }
 }

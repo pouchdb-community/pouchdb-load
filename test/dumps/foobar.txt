@@ -1,0 +1,7 @@
+{"version":"1.0.0","db_type":"http","start_time":"2014-11-02T18:57:26.169Z","db_info":{"db_name":"foobar","doc_count":2,"doc_del_count":1,"update_seq":4,"purge_seq":0,"compact_running":false,"disk_size":16479,"data_size":419,"instance_start_time":"1414953985168119","disk_format_version":6,"committed_update_seq":4,"host":"http://localhost:5984/foobar/","auto_compaction":false}}
+{"docs":[{"_id":"foo","_rev":"1-x"}]}
+{"seq":1}
+{"docs":[{"_id":"bar","_rev":"1-y"}]}
+{"seq":2}
+{"docs":[{"_id": "baz", "_rev": "1-w"}]}
+{"seq":3}
