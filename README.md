@@ -99,7 +99,9 @@ series.then(function () {
 
 #### Notes on idempotency
 
-The `load()` operation is *idempotent*, meaning that you can run it over and over again, and it won't create duplicate documents in the target database. However, this is inefficient to run every time your user loads your app. So if you'd like, you can use "local documents" to remember whether or not this database has already been loaded:
+The `load()` operation is *idempotent*, meaning that you can run it over and over again, and it won't create duplicate documents in the target database.
+
+However, it's inefficient to run the `load()` every time the user starts your app. So if you'd like, you can use "local documents" to remember whether or not this database has already been loaded:
 
 ```js
 db.get('_local/initial_load_complete').catch(function (err) {
