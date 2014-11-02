@@ -6,7 +6,7 @@
   "noarg": true,
   "sub": true,
   "undef": true,
-  "unused": true,
+  "unused": false,
   "eqnull": true,
   "browser": true,
   "node": true,
@@ -24,6 +24,8 @@
     "describe",
     "beforeEach",
     "afterEach",
+    "before",
+    "after",
     "it",
     "emit"
   ]

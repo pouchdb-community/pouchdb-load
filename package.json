@@ -23,7 +23,7 @@
   "scripts": {
     "test-node": "TEST_DB=testdb,http://localhost:5984/testdb istanbul test ./node_modules/mocha/bin/_mocha test/test.js",
     "test-browser": "./bin/test-browser.js",
-    "jshint": "jshint -c .jshintrc *.js test/test.js",
+    "jshint": "jshint -c .jshintrc lib/*.js test/test.js",
     "test": "npm run jshint && ./bin/run-test.sh",
     "build": "mkdir -p dist && browserify index.js -o dist/pouchdb.load.js && npm run min",
     "min": "uglifyjs dist/pouchdb.load.js -mc > dist/pouchdb.load.min.js",
@@ -62,6 +62,7 @@
     ]
   },
   "browser": {
-    "./lib/ajax.js": "./lib/ajax-browser.js"
+    "./lib/ajax.js": "./lib/ajax-browser.js",
+    "http-server": false
   }
 }

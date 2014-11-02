@@ -2,6 +2,7 @@
 'use strict';
 
 var Pouch = require('pouchdb');
+var httpServer = require('http-server');
 
 var plugin = require('../lib');
 Pouch.plugin(plugin);
@@ -10,7 +11,7 @@ var chai = require('chai');
 chai.use(require("chai-as-promised"));
 
 chai.should(); // var should = chai.should();
-require('bluebird'); // var Promise = require('bluebird');
+var Promise = require('bluebird');
 
 var dbs;
 if (process.browser) {
@@ -25,27 +26,47 @@ dbs.split(',').forEach(function (db) {
   tests(db, dbType);
 });
 
+function getUrl(filename) {
+  if (typeof process === 'undefined' || process.browser) {
+    return '/test/dumps/' + filename;
+  }
+  return 'http://127.0.0.1:8001/test/dumps/' + filename;
+}
+
 function tests(dbName, dbType) {
 
   var db;
+  var server;
 
-  beforeEach(function () {
-    this.timeout(30000);
-    db = new Pouch(dbName);
-    return db;
-  });
-  afterEach(function () {
-    this.timeout(30000);
-    return Pouch.destroy(dbName);
-  });
   describe(dbType + ': basic dump', function () {
     this.timeout(30000);
 
+    beforeEach(function () {
+      this.timeout(30000);
+      db = new Pouch(dbName);
+      if (typeof process !== 'undefined'  && !process.browser) {
+        server = httpServer.createServer();
+        return new Promise(function (resolve) {
+          server.listen(8001, resolve);
+        });
+      }
+    });
+    afterEach(function () {
+      this.timeout(30000);
+      return Pouch.destroy(dbName).then(function () {
+        if (typeof process !== 'undefined'  && !process.browser) {
+          server.close();
+        }
+      });
+    });
+
     it('should load the dumpfile', function () {
-      return db.load('/test/dumps/bloggr.txt').then(function () {
+
+      var url = getUrl('bloggr.txt');
+      return db.load(url).then(function () {
         return db.info();
       }).then(function (info) {
-        info.doc_count.should.equal(10);
+        info.doc_count.should.equal(12);
       });
     });
   });

@@ -55,7 +55,7 @@
 {"seq":28}
 {"docs":[{"_id":"post_2_D0BE8C52-84EC-D20A-A1A5-8D966A43C774","_rev":"1-fac01b9ac0d81c9aa2651728a103afaa","data":{"title":"","author":"C.L.I. Ember","date":"2014-09-14T19:31:39.724Z","excerpt":"","body":""}}]}
 {"seq":29}
-{"docs":[{"_id":"post_2_EE35EA37-019C-13F7-9CAF-EAF145803730","_rev":"4-70b264e39c4eb4b3afa74c038b0c5275","_deleted":true,"_revisions":{"start":4,"ids":["70b264e39c4eb4b3afa74c038b0c5275","9f45415c0943d81b6729b10a3611da7f","914bf7bba7378567299d6c94e7f91c93","7fdf8f326dbc9c065a247bc7925669a0"]}},{"_id":"post_2_EE35EA37-019C-13F7-9CAF-EAF145803730","_rev":"3-f6d28cdc59c2d49667201db50c94e113","_revisions":{"start":3,"ids":["f6d28cdc59c2d49667201db50c94e113","914bf7bba7378567299d6c94e7f91c93","7fdf8f326dbc9c065a247bc7925669a0"]}}]}
+{"docs":[{"_id":"post_2_EE35EA37-019C-13F7-9CAF-EAF145803730","_rev":"3-f6d28cdc59c2d49667201db50c94e113","_revisions":{"start":3,"ids":["f6d28cdc59c2d49667201db50c94e113","914bf7bba7378567299d6c94e7f91c93","7fdf8f326dbc9c065a247bc7925669a0"]}},{"_id":"post_2_EE35EA37-019C-13F7-9CAF-EAF145803730","_rev":"4-70b264e39c4eb4b3afa74c038b0c5275","_deleted":true,"_revisions":{"start":4,"ids":["70b264e39c4eb4b3afa74c038b0c5275","9f45415c0943d81b6729b10a3611da7f","914bf7bba7378567299d6c94e7f91c93","7fdf8f326dbc9c065a247bc7925669a0"]}}]}
 {"seq":30}
 {"docs":[{"_id":"post_2_F82CC173-F241-173B-8DF3-AFD46F2277CB","_rev":"3-f46a883e789fa6234471c0c47c4d4620","_deleted":true,"_revisions":{"start":3,"ids":["f46a883e789fa6234471c0c47c4d4620","7443eef5aefc54dc02a083e3bd89430b","1c86c987c765dbd8855cc285eb764adf"]}}]}
 {"seq":31}
