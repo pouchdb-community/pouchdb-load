@@ -276,6 +276,10 @@ var utils = require('./utils');
 function updateCheckpoint(db, id, checkpoint, returnValue) {
   return db.get(id)["catch"](function (err) {
     if (err.status === 404) {
+      if (db.type() === 'http') {
+        utils.explain404(
+          'PouchDB is just checking if a remote checkpoint exists.');
+      }
       return {_id: id};
     }
     throw err;
@@ -534,8 +538,8 @@ exports.load = utils.toPromise(function (url, opts, callback) {
       }
 
       db.info().then(function (info) {
-        var src = new db.constructor(info.db_name);
-        var target = new db.constructor(opts.proxy);
+        var src = new db.constructor(opts.proxy);
+        var target = new db.constructor(info.db_name);
 
         return utils.genReplicationId(src, target, {}).then(function (replId) {
           var state = {
@@ -782,6 +786,15 @@ exports.genReplicationId = function genReplicationId(src, target, opts) {
 };
 
 exports.MD5 = exports.toPromise(require('./md5'));
+
+// designed to give info to browser users, who are disturbed
+// when they see 404s in the console
+exports.explain404 = function (str) {
+  if (process.browser && 'console' in global && 'info' in console) {
+    console.info('The above 404 is totally normal. ' +
+    str + '\n\u2665 the PouchDB team');
+  }
+};
 },{"./md5":6,"./uuid":8,"__browserify_process":10,"inherits":11,"lie":15,"pouchdb-extend":30}],8:[function(require,module,exports){
 "use strict";
 
