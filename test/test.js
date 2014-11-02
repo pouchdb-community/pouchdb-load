@@ -10,7 +10,7 @@ Pouch.plugin(plugin);
 var chai = require('chai');
 chai.use(require("chai-as-promised"));
 
-chai.should(); // var should = chai.should();
+var should = chai.should();
 var Promise = require('bluebird');
 
 var dbs;
@@ -61,12 +61,39 @@ function tests(dbName, dbType) {
     });
 
     it('should load the dumpfile', function () {
-
       var url = getUrl('bloggr.txt');
       return db.load(url).then(function () {
         return db.info();
       }).then(function (info) {
         info.doc_count.should.equal(12);
+      });
+    });
+
+    it('should load the dumpfile, with a callback', function (done) {
+      var url = getUrl('bloggr.txt');
+      db.load(url, function () {
+        db.info(function (err, info) {
+          info.doc_count.should.equal(12);
+          done();
+        });
+      });
+    });
+
+    it('handles 404s', function () {
+      var url = getUrl('404.txt');
+      return db.load(url).then(function () {
+        throw new Error('should not be here');
+      }, function (err) {
+        should.exist(err);
+      });
+    });
+
+    it('handles malformed', function () {
+      var url = getUrl('malformed.txt');
+      return db.load(url).then(function () {
+        throw new Error('should not be here');
+      }, function (err) {
+        should.exist(err);
       });
     });
   });
