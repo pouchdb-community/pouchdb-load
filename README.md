@@ -99,7 +99,7 @@ series.then(function () {
 
 #### Handoff to regular replication
 
-Normally the `load()` operation doesn't write any *checkpoints*, meaning that if you switch from `load()` to normal replication, then it will start reading all the changes from the remote CouchDB from 0. This is slow, so to avoid it, use the `proxy` option:
+Normally the `load()` operation doesn't write any *checkpoints*, meaning that if you switch from `load()` to normal replication, then it will start reading all the changes from the remote CouchDB from the beginning of time. This is slow, so to avoid it, use the `proxy` option:
 
 ```js
 db.load('http://example.com/my-dump-file.txt', {
@@ -112,7 +112,7 @@ db.load('http://example.com/my-dump-file.txt', {
 });
 ```
 
-This will tell the plugin that the dumpfile `'http://example.com/my-dump-file.txt'` is just a proxy for `''http://mysite.com/mydb'`. So when you pick up replication again, it won't start from 0 but rather will start from the checkpoint reported by the dump file.
+This will tell the plugin that the dumpfile `'http://example.com/my-dump-file.txt'` is just a proxy for `'http://mysite.com/mydb'`. So when you pick up replication again, it won't start from 0 but rather will start from the last checkpoint reported by the dump file.
 
 #### Notes on idempotency
 
