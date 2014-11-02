@@ -43,7 +43,7 @@ API
 
 This plugin exposes a single method on your database, `load()`:
 
-### db.load(url [, callback])
+### db.load(url [, options] [, callback])
 
 This method returns a Promise or calls your callback, if you prefer the callback style.
 
@@ -96,6 +96,23 @@ series.then(function () {
   // HTTP error or something like that
 });
 ```
+
+#### Handoff to regular replication
+
+Normally the `load()` operation doesn't write any *checkpoints*, meaning that if you switch from `load()` to normal replication, then it will start reading all the changes from the remote CouchDB from 0. This is slow, so to avoid it, use the `proxy` option:
+
+```js
+db.load('http://example.com/my-dump-file.txt', {
+  proxy: 'http://mysite.com/mydb'
+}).then(function () {
+  // done loading! handoff to regular replication
+  return db.replicate.from('http://mysite.com/mydb');
+}).catch(function (err) {
+  // HTTP error or something like that
+});
+```
+
+This will tell the plugin that the dumpfile `'http://example.com/my-dump-file.txt'` is just a proxy for `''http://mysite.com/mydb'`. So when you pick up replication again, it won't start from 0 but rather will start from the checkpoint reported by the dump file.
 
 #### Notes on idempotency
 
