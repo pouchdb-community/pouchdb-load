@@ -1,0 +1,28 @@
+{
+  "name": "pouchdb-load",
+  "version": "1.0.0",
+  "homepage": "https://github.com/nolanlawson/pouchdb-load",
+  "authors": [
+    "Nolan Lawson <nolan.lawson@gmail.com>"
+  ],
+  "description": "PouchDB Load - load dumped CouchDB/PouchDB databases on the client",
+  "main": "dist/pouchdb.load.js",
+  "moduleType": [
+    "node"
+  ],
+  "keywords": [
+    "pouchdb",
+    "plugin",
+    "load",
+    "dump",
+    "couchdb"
+  ],
+  "license": "Apache",
+  "ignore": [
+    "**/.*",
+    "node_modules",
+    "bower_components",
+    "test",
+    "tests"
+  ]
+}
