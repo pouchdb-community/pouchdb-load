@@ -270,9 +270,9 @@ module.exports = createBlob;
 
 },{}],3:[function(require,module,exports){
 'use strict';
-
+/* istanbul ignore next */
 var utils = require('./utils');
-
+/* istanbul ignore next */
 function updateCheckpoint(db, id, checkpoint, returnValue) {
   return db.get(id)["catch"](function (err) {
     if (err.status === 404) {
@@ -291,23 +291,25 @@ function updateCheckpoint(db, id, checkpoint, returnValue) {
     return db.put(doc);
   });
 }
-
+/* istanbul ignore next */
 function Checkpointer(src, target, id, returnValue) {
   this.src = src;
   this.target = target;
   this.id = id;
   this.returnValue = returnValue;
 }
-
+/* istanbul ignore next */
 Checkpointer.prototype.writeCheckpoint = function (checkpoint) {
   var self = this;
   return this.updateTarget(checkpoint).then(function () {
     return self.updateSource(checkpoint);
   });
 };
+/* istanbul ignore next */
 Checkpointer.prototype.updateTarget = function (checkpoint) {
   return updateCheckpoint(this.target, this.id, checkpoint, this.returnValue);
 };
+/* istanbul ignore next */
 Checkpointer.prototype.updateSource = function (checkpoint) {
   var self = this;
   if (this.readOnlySource) {
@@ -324,6 +326,7 @@ Checkpointer.prototype.updateSource = function (checkpoint) {
       throw err;
     });
 };
+/* istanbul ignore next */
 Checkpointer.prototype.getCheckpoint = function () {
   var self = this;
   return self.target.get(self.id).then(function (targetDoc) {
@@ -356,7 +359,7 @@ Checkpointer.prototype.getCheckpoint = function () {
     return 0;
   });
 };
-
+/* istanbul ignore next */
 module.exports = Checkpointer;
 },{"./utils":7}],4:[function(require,module,exports){
 "use strict";
@@ -530,6 +533,7 @@ exports.load = utils.toPromise(function (url, opts, callback) {
     }
 
     db.bulkDocs({docs: docs, new_edits: false}, function (err) {
+      /* istanbul ignore next */
       if (err) {
         return callback(err);
       }
@@ -540,8 +544,12 @@ exports.load = utils.toPromise(function (url, opts, callback) {
       db.info().then(function (info) {
         var src = new db.constructor(opts.proxy);
         var target = new db.constructor(info.db_name);
+        var replIdOpts = {};
+        if (opts.filter) {
+          replIdOpts.filter = opts.filter;
+        }
 
-        return utils.genReplicationId(src, target, {}).then(function (replId) {
+        return utils.genReplicationId(src, target, replIdOpts).then(function (replId) {
           var state = {
             cancelled: false
           };
@@ -562,12 +570,16 @@ if (typeof window !== 'undefined' && window.PouchDB) {
 
 },{"./ajax":1,"./checkpointer":3,"./utils":7}],6:[function(require,module,exports){
 var process=require("__browserify_process"),global=typeof self !== "undefined" ? self : typeof window !== "undefined" ? window : {};'use strict';
-
+/* istanbul ignore next */
 var crypto = require('crypto');
+/* istanbul ignore next */
 var Md5 = require('spark-md5');
+/* istanbul ignore next */
 var setImmediateShim = global.setImmediate || global.setTimeout;
+/* istanbul ignore next */
 var MD5_CHUNK_SIZE = 32768;
 
+/* istanbul ignore next */
 function sliceShim(arrayBuffer, begin, end) {
   if (typeof arrayBuffer.slice === 'function') {
     if (!begin) {
@@ -612,6 +624,7 @@ function sliceShim(arrayBuffer, begin, end) {
 }
 
 // convert a 64-bit int to a binary string
+/* istanbul ignore next */
 function intToString(int) {
   var bytes = [
     (int & 0xff),
@@ -626,6 +639,7 @@ function intToString(int) {
 
 // convert an array of 64-bit ints into
 // a base64-encoded string
+/* istanbul ignore next */
 function rawToBase64(raw) {
   var res = '';
   for (var i = 0; i < raw.length; i++) {
@@ -634,6 +648,7 @@ function rawToBase64(raw) {
   return global.btoa(res);
 }
 
+/* istanbul ignore next */
 module.exports = function (data, callback) {
   if (!process.browser) {
     var base64 = crypto.createHash('md5').update(data).digest('base64');
@@ -789,6 +804,7 @@ exports.MD5 = exports.toPromise(require('./md5'));
 
 // designed to give info to browser users, who are disturbed
 // when they see 404s in the console
+/* istanbul ignore next */
 exports.explain404 = function (str) {
   if (process.browser && 'console' in global && 'info' in console) {
     console.info('The above 404 is totally normal. ' +
