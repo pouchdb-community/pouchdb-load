@@ -114,6 +114,24 @@ db.load('http://example.com/my-dump-file.txt', {
 
 This will tell the plugin that the dumpfile `'http://example.com/my-dump-file.txt'` is just a proxy for `'http://mysite.com/mydb'`. So when you pick up replication again, it won't start from 0 but rather will start from the last checkpoint reported by the dump file.
 
+If your replication also involves a `filter` function, you should pass that in as `filter` as well (so that the correct checkpoint can be written):
+
+```js
+function filterFun(doc) {
+  /* your cool filter function here */ 
+}
+
+db.load('http://example.com/my-dump-file.txt', {
+  proxy: 'http://mysite.com/mydb',
+  filter: filterFun
+}).then(function () {
+  // done loading! handoff to regular replication
+  return db.replicate.from('http://mysite.com/mydb', {filter: filterFun});
+}).catch(function (err) {
+  // HTTP error or something like that
+});
+```
+
 #### Notes on idempotency
 
 The `load()` operation is *idempotent*, meaning that you can run it over and over again, and it won't create duplicate documents in the target database.
