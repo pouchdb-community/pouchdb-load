@@ -25,7 +25,7 @@
     "test-browser": "./bin/test-browser.js",
     "jshint": "jshint -c .jshintrc lib/*.js test/test.js",
     "test": "npm run jshint && ./bin/run-test.sh",
-    "build": "mkdir -p dist && browserify index.js -o dist/pouchdb.load.js && npm run min",
+    "build": "mkdir -p dist && browserify lib/index.js -o dist/pouchdb.load.js && npm run min",
     "min": "uglifyjs dist/pouchdb.load.js -mc > dist/pouchdb.load.min.js",
     "dev": "browserify test/test.js > test/test-bundle.js && npm run dev-server",
     "dev-server": "./bin/dev-server.js",
