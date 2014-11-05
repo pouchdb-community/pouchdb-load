@@ -2,7 +2,7 @@
   "name": "pouchdb-load",
   "version": "1.2.0",
   "description": "PouchDB Load - load dumped CouchDB/PouchDB databases on the client",
-  "main": "index.js",
+  "main": "./lib/index.js",
   "repository": {
     "type": "git",
     "url": "git://github.com/nolanlawson/pouchdb-load.git"
