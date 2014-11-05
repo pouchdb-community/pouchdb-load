@@ -140,7 +140,7 @@ However, it's inefficient to run the `load()` every time the user starts your ap
 
 ```js
 db.get('_local/initial_load_complete').catch(function (err) {
-  if (err !== 404) { // 404 means not found
+  if (err.status !== 404) { // 404 means not found
     throw err;
   }
   db.load(/* ... */).then(function () {
