@@ -66,7 +66,7 @@ function tests(dbName, dbType) {
 
     it('should load the dumpfile', function () {
       var url = getUrl('bloggr.txt');
-      return db.load(url).then(function () {
+      return db.load_dump(url).then(function () {
         return db.info();
       }).then(function (info) {
         info.doc_count.should.equal(12);
@@ -75,7 +75,7 @@ function tests(dbName, dbType) {
 
     it('should load the dumpfile 2', function () {
       var url = getUrl('bloggr2.txt');
-      return db.load(url).then(function () {
+      return db.load_dump(url).then(function () {
         return db.info();
       }).then(function (info) {
         info.doc_count.should.equal(12);
@@ -88,7 +88,7 @@ function tests(dbName, dbType) {
         urls.push(getUrl('bloggr-split/bloggr_0000000' + i + '.txt'));
       }
       return Promise.all(urls.map(function (url) {
-        return db.load(url);
+        return db.load_dump(url);
       })).then(function () {
         return db.info();
       }).then(function (info) {
@@ -98,7 +98,7 @@ function tests(dbName, dbType) {
 
     it('should load the dumpfile, with a callback', function (done) {
       var url = getUrl('bloggr.txt');
-      db.load(url, function () {
+      db.load_dump(url, function () {
         db.info(function (err, info) {
           info.doc_count.should.equal(12);
           done();
@@ -108,7 +108,7 @@ function tests(dbName, dbType) {
 
     it('handles 404s', function () {
       var url = getUrl('404.txt');
-      return db.load(url).then(function () {
+      return db.load_dump(url).then(function () {
         throw new Error('should not be here');
       }, function (err) {
         should.exist(err);
@@ -117,7 +117,7 @@ function tests(dbName, dbType) {
 
     it('handles malformed', function () {
       var url = getUrl('malformed.txt');
-      return db.load(url).then(function () {
+      return db.load_dump(url).then(function () {
         throw new Error('should not be here');
       }, function (err) {
         should.exist(err);
@@ -160,8 +160,8 @@ function clientServerTests(dbName) {
 
     it('should load the dumpfile', function () {
       var url = getUrl('bloggr.txt');
-      return db.load(url).then(function () {
-        return remote.load(url);
+      return db.load_dump(url).then(function () {
+        return remote.load_dump(url);
       }).then(function () {
         return db.info();
       }).then(function (info) {
@@ -190,7 +190,7 @@ function clientServerTests(dbName) {
       return remote.bulkDocs(docs1, {new_edits: false}).then(function () {
         return remote.bulkDocs(docs2, {new_edits: false});
       }).then(function () {
-        return db.load(url, {proxy: dbs[1]});
+        return db.load_dump(url, {proxy: dbs[1]});
       }).then(function () {
         return db.info();
       }).then(function (info) {
@@ -210,7 +210,7 @@ function clientServerTests(dbName) {
         {"_id": "quux", "_rev": "1-q"}
       ];
       return remote.bulkDocs(docs, {new_edits: false}).then(function () {
-        return db.load(url, {proxy: dbs[1]});
+        return db.load_dump(url, {proxy: dbs[1]});
       }).then(function () {
         return db.info();
       }).then(function (info) {
@@ -248,7 +248,7 @@ function clientServerTests(dbName) {
       return remote.bulkDocs(docs1, {new_edits: false}).then(function () {
         return remote.bulkDocs(docs2, {new_edits: false});
       }).then(function () {
-        return db.load(url, {
+        return db.load_dump(url, {
           proxy: dbs[1],
           filter: function (doc) {
             return !!doc;
@@ -277,7 +277,7 @@ function clientServerTests(dbName) {
         {"_id": "quux", "_rev": "1-q"}
       ];
       return remote.bulkDocs(docs, {new_edits: false}).then(function () {
-        return db.load(url, {
+        return db.load_dump(url, {
           proxy: dbs[1],
           filter: function (doc) {
             return !!doc;
