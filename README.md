@@ -132,6 +132,10 @@ db.load('http://example.com/my-dump-file.txt', {
 });
 ```
 
+#### Live demo
+
+[NPM Browser](http://npm-browser.com) uses pouchdb-load to load a bunch of static files from Amazon S3, which is how it's able to replicate all of NPM so quickly. Here is [the relevant code](https://github.com/pouchdb/npm-browser/blob/c16ada690be45df0af80336aedd69f308d3f105b/scripts/services/pouch-service.js#L72-L108), which does the dump, checkpointing, and handoff to regular replication (as described above).
+
 #### Notes on idempotency
 
 The `load()` operation is *idempotent*, meaning that you can run it over and over again, and it won't create duplicate documents in the target database.
