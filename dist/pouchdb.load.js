@@ -508,7 +508,12 @@ exports.load = utils.toPromise(function (url, opts, callback) {
     opts = {};
   }
 
-  ajax({url: url, json: false}, function (err, data) {
+  var ajaxOptions = { url: url, json: false };
+  if (opts.ajax) {
+    ajaxOptions = utils.extend(true, ajaxOptions, opts.ajax);
+  }
+
+  ajax(ajaxOptions, function (err, data) {
     if (err) {
       return callback(err);
     }
