@@ -507,6 +507,10 @@ exports.load = utils.toPromise(function (url, opts, callback) {
     callback = opts;
     opts = {};
   }
+  
+  if( opts.headers ) {
+    ajaxOptions = utils.extend(true, ajaxOptions, opts);
+  }
 
   var ajaxOptions = { url: url, json: false };
   if (opts.ajax) {
