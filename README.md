@@ -132,6 +132,20 @@ db.load('http://example.com/my-dump-file.txt', {
 });
 ```
 
+#### Custom ajax options
+
+You can also include ajax options in the `options`:
+
+```js
+db.load('myfile.txt', {
+  ajax: {
+    timeout: 30000
+  }
+});
+```
+
+The ajax options themselves are described in [the PouchDB documentation](http://pouchdb.com/api.html#create_database).
+
 #### Live demo
 
 [NPM Browser](http://npm-browser.com) uses pouchdb-load to load a bunch of static files from Amazon S3, which is how it's able to replicate all of NPM so quickly. Here is [the relevant code](https://github.com/pouchdb/npm-browser/blob/c16ada690be45df0af80336aedd69f308d3f105b/scripts/services/pouch-service.js#L72-L108), which does the dump, checkpointing, and handoff to regular replication (as described above).

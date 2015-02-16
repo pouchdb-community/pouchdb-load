@@ -73,6 +73,15 @@ function tests(dbName, dbType) {
       });
     });
 
+    it('should load the dumpfile with ajax opts', function () {
+      var url = getUrl('bloggr.txt');
+      return db.load(url, {ajax: {timeout: 30000}}).then(function () {
+        return db.info();
+      }).then(function (info) {
+        info.doc_count.should.equal(12);
+      });
+    });
+
     it('should load the dumpfile 2', function () {
       var url = getUrl('bloggr2.txt');
       return db.load(url).then(function () {
