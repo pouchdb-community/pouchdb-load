@@ -1,274 +1,4 @@
 ;(function e(t,n,r){function s(o,u){if(!n[o]){if(!t[o]){var a=typeof require=="function"&&require;if(!u&&a)return a(o,!0);if(i)return i(o,!0);throw new Error("Cannot find module '"+o+"'")}var f=n[o]={exports:{}};t[o][0].call(f.exports,function(e){var n=t[o][1][e];return s(n?n:e)},f,f.exports,e,t,n,r)}return n[o].exports}var i=typeof require=="function"&&require;for(var o=0;o<r.length;o++)s(r[o]);return s})({1:[function(require,module,exports){
-// taken from pouchdb
-"use strict";
-
-var createBlob = require('./blob.js');
-var errors = require('./errors');
-var utils = require("./utils");
-var hasUpload;
-
-function ajax(options, adapterCallback) {
-
-  var requestCompleted = false;
-  var callback = utils.getArguments(function (args) {
-    if (requestCompleted) {
-      return;
-    }
-    adapterCallback.apply(this, args);
-    requestCompleted = true;
-  });
-
-  if (typeof options === "function") {
-    callback = options;
-    options = {};
-  }
-
-  options = utils.clone(options);
-
-  var defaultOptions = {
-    method : "GET",
-    headers: {},
-    json: true,
-    processData: true,
-    timeout: 10000,
-    cache: false
-  };
-
-  options = utils.extend(true, defaultOptions, options);
-
-  // cache-buster, specifically designed to work around IE's aggressive caching
-  // see http://www.dashbay.com/2011/05/internet-explorer-caches-ajax/
-  if (options.method === 'GET' && !options.cache) {
-    var hasArgs = options.url.indexOf('?') !== -1;
-    options.url += (hasArgs ? '&' : '?') + '_nonce=' + utils.uuid(16);
-  }
-
-  function onSuccess(obj, resp, cb) {
-    if (!options.binary && !options.json && options.processData &&
-      typeof obj !== 'string') {
-      obj = JSON.stringify(obj);
-    } else if (!options.binary && options.json && typeof obj === 'string') {
-      try {
-        obj = JSON.parse(obj);
-      } catch (e) {
-        // Probably a malformed JSON from server
-        return cb(e);
-      }
-    }
-    if (Array.isArray(obj)) {
-      obj = obj.map(function (v) {
-        var obj;
-        if (v.ok) {
-          return v;
-        } else if (v.error && v.error === 'conflict') {
-          obj = errors.REV_CONFLICT;
-          obj.id = v.id;
-          return obj;
-        } else if (v.error && v.error === 'forbidden') {
-          obj = errors.FORBIDDEN;
-          obj.id = v.id;
-          obj.reason = v.reason;
-          return obj;
-        } else if (v.missing) {
-          obj = errors.MISSING_DOC;
-          obj.missing = v.missing;
-          return obj;
-        } else {
-          return v;
-        }
-      });
-    }
-    cb(null, obj, resp);
-  }
-
-  function onError(err, cb) {
-    var errParsed, errObj, errType, key;
-    try {
-      errParsed = JSON.parse(err.responseText);
-      //would prefer not to have a try/catch clause
-      for (key in errors) {
-        if (errors.hasOwnProperty(key) &&
-            errors[key].name === errParsed.error) {
-          errType = errors[key];
-          break;
-        }
-      }
-      if (!errType) {
-        errType = errors.UNKNOWN_ERROR;
-        if (err.status) {
-          errType.status = err.status;
-        }
-        if (err.statusText) {
-          err.name = err.statusText;
-        }
-      }
-      errObj = errors.error(errType, errParsed.reason);
-    } catch (e) {
-      for (var key in errors) {
-        if (errors.hasOwnProperty(key) && errors[key].status === err.status) {
-          errType = errors[key];
-          break;
-        }
-      }
-      if (!errType) {
-        errType = errors.UNKNOWN_ERROR;
-        if (err.status) {
-          errType.status = err.status;
-        }
-        if (err.statusText) {
-          err.name = err.statusText;
-        }
-      }
-      errObj = errors.error(errType);
-    }
-    cb(errObj);
-  }
-
-  var timer;
-  var xhr;
-  if (options.xhr) {
-    xhr = new options.xhr();
-  } else {
-    xhr = new XMLHttpRequest();
-  }
-  xhr.open(options.method, options.url);
-  xhr.withCredentials = true;
-
-  if (options.json) {
-    options.headers.Accept = 'application/json';
-    options.headers['Content-Type'] = options.headers['Content-Type'] ||
-      'application/json';
-    if (options.body &&
-        options.processData &&
-        typeof options.body !== "string") {
-      options.body = JSON.stringify(options.body);
-    }
-  }
-
-  if (options.binary) {
-    xhr.responseType = 'arraybuffer';
-  }
-
-  var createCookie = function (name, value, days) {
-    var expires = "";
-    if (days) {
-      var date = new Date();
-      date.setTime(date.getTime() + (days * 24 * 60 * 60 * 1000));
-      expires = "; expires=" + date.toGMTString();
-    }
-    document.cookie = name + "=" + value + expires + "; path=/";
-  };
-
-  for (var key in options.headers) {
-    if (key === 'Cookie') {
-      var cookie = options.headers[key].split('=');
-      createCookie(cookie[0], cookie[1], 10);
-    } else {
-      xhr.setRequestHeader(key, options.headers[key]);
-    }
-  }
-
-  if (!("body" in options)) {
-    options.body = null;
-  }
-
-  var abortReq = function () {
-    if (requestCompleted) {
-      return;
-    }
-    xhr.abort();
-    onError(xhr, callback);
-  };
-
-  xhr.onreadystatechange = function () {
-    if (xhr.readyState !== 4 || requestCompleted) {
-      return;
-    }
-    clearTimeout(timer);
-    if (xhr.status >= 200 && xhr.status < 300) {
-      var data;
-      if (options.binary) {
-        data = createBlob([xhr.response || ''], {
-          type: xhr.getResponseHeader('Content-Type')
-        });
-      } else {
-        data = xhr.responseText;
-      }
-      onSuccess(data, xhr, callback);
-    } else {
-      onError(xhr, callback);
-    }
-  };
-
-  if (options.timeout > 0) {
-    timer = setTimeout(abortReq, options.timeout);
-    xhr.onprogress = function () {
-      clearTimeout(timer);
-      timer = setTimeout(abortReq, options.timeout);
-    };
-    if (typeof hasUpload === 'undefined') {
-      // IE throws an error if you try to access it directly
-      hasUpload = Object.keys(xhr).indexOf('upload') !== -1;
-    }
-    if (hasUpload) { // does not exist in ie9
-      xhr.upload.onprogress = xhr.onprogress;
-    }
-  }
-  if (options.body && (options.body instanceof Blob)) {
-    var reader = new FileReader();
-    reader.onloadend = function (e) {
-
-      var binary = "";
-      var bytes = new Uint8Array(this.result);
-      var length = bytes.byteLength;
-
-      for (var i = 0; i < length; i++) {
-        binary += String.fromCharCode(bytes[i]);
-      }
-
-      binary = utils.fixBinary(binary);
-      xhr.send(binary);
-    };
-    reader.readAsArrayBuffer(options.body);
-  } else {
-    xhr.send(options.body);
-  }
-  return {abort: abortReq};
-}
-
-module.exports = ajax;
-
-},{"./blob.js":2,"./errors":4,"./utils":7}],2:[function(require,module,exports){
-var global=typeof self !== "undefined" ? self : typeof window !== "undefined" ? window : {};"use strict";
-
-//Abstracts constructing a Blob object, so it also works in older
-//browsers that don't support the native Blob constructor. (i.e.
-//old QtWebKit versions, at least).
-function createBlob(parts, properties) {
-  parts = parts || [];
-  properties = properties || {};
-  try {
-    return new Blob(parts, properties);
-  } catch (e) {
-    if (e.name !== "TypeError") {
-      throw e;
-    }
-    var BlobBuilder = global.BlobBuilder ||
-                      global.MSBlobBuilder ||
-                      global.MozBlobBuilder ||
-                      global.WebKitBlobBuilder;
-    var builder = new BlobBuilder();
-    for (var i = 0; i < parts.length; i += 1) {
-      builder.append(parts[i]);
-    }
-    return builder.getBlob(properties.type);
-  }
-}
-
-module.exports = createBlob;
-
-
-},{}],3:[function(require,module,exports){
 'use strict';
 /* istanbul ignore next */
 var utils = require('./utils');
@@ -361,143 +91,11 @@ Checkpointer.prototype.getCheckpoint = function () {
 };
 /* istanbul ignore next */
 module.exports = Checkpointer;
-},{"./utils":7}],4:[function(require,module,exports){
-"use strict";
-
-function PouchError(opts) {
-  this.status = opts.status;
-  this.name = opts.error;
-  this.message = opts.reason;
-  this.error = true;
-}
-
-PouchError.prototype__proto__ = Error.prototype;
-/* istanbul ignore next */
-PouchError.prototype.toString = function () {
-  return JSON.stringify({
-    status: this.status,
-    name: this.name,
-    message: this.message
-  });
-};
-
-exports.UNAUTHORIZED = new PouchError({
-  status: 401,
-  error: 'unauthorized',
-  reason: "Name or password is incorrect."
-});
-exports.MISSING_BULK_DOCS = new PouchError({
-  status: 400,
-  error: 'bad_request',
-  reason: "Missing JSON list of 'docs'"
-});
-exports.MISSING_DOC = new PouchError({
-  status: 404,
-  error: 'not_found',
-  reason: 'missing'
-});
-exports.REV_CONFLICT = new PouchError({
-  status: 409,
-  error: 'conflict',
-  reason: 'Document update conflict'
-});
-exports.INVALID_ID = new PouchError({
-  status: 400,
-  error: 'invalid_id',
-  reason: '_id field must contain a string'
-});
-exports.MISSING_ID = new PouchError({
-  status: 412,
-  error: 'missing_id',
-  reason: '_id is required for puts'
-});
-exports.RESERVED_ID = new PouchError({
-  status: 400,
-  error: 'bad_request',
-  reason: 'Only reserved document ids may start with underscore.'
-});
-exports.NOT_OPEN = new PouchError({
-  status: 412,
-  error: 'precondition_failed',
-  reason: 'Database not open'
-});
-exports.UNKNOWN_ERROR = new PouchError({
-  status: 500,
-  error: 'unknown_error',
-  reason: 'Database encountered an unknown error'
-});
-exports.BAD_ARG = new PouchError({
-  status: 500,
-  error: 'badarg',
-  reason: 'Some query argument is invalid'
-});
-exports.INVALID_REQUEST = new PouchError({
-  status: 400,
-  error: 'invalid_request',
-  reason: 'Request was invalid'
-});
-exports.QUERY_PARSE_ERROR = new PouchError({
-  status: 400,
-  error: 'query_parse_error',
-  reason: 'Some query parameter is invalid'
-});
-exports.DOC_VALIDATION = new PouchError({
-  status: 500,
-  error: 'doc_validation',
-  reason: 'Bad special document member'
-});
-exports.BAD_REQUEST = new PouchError({
-  status: 400,
-  error: 'bad_request',
-  reason: 'Something wrong with the request'
-});
-exports.NOT_AN_OBJECT = new PouchError({
-  status: 400,
-  error: 'bad_request',
-  reason: 'Document must be a JSON object'
-});
-exports.DB_MISSING = new PouchError({
-  status: 404,
-  error: 'not_found',
-  reason: 'Database not found'
-});
-exports.IDB_ERROR = new PouchError({
-  status: 500,
-  error: 'indexed_db_went_bad',
-  reason: 'unknown'
-});
-exports.WSQ_ERROR = new PouchError({
-  status: 500,
-  error: 'web_sql_went_bad',
-  reason: 'unknown'
-});
-exports.LDB_ERROR = new PouchError({
-  status: 500,
-  error: 'levelDB_went_went_bad',
-  reason: 'unknown'
-});
-exports.FORBIDDEN = new PouchError({
-  status: 403,
-  error: 'forbidden',
-  reason: 'Forbidden by design doc validate_doc_update function'
-});
-/* istanbul ignore next */
-exports.error = function (error, reason, name) {
-  function CustomPouchError(msg) {
-    this.message = reason;
-    if (name) {
-      this.name = name;
-    }
-  }
-  CustomPouchError.prototype = error;
-  return new CustomPouchError(reason);
-};
-
-},{}],5:[function(require,module,exports){
+},{"./utils":4}],2:[function(require,module,exports){
 'use strict';
 
 var utils = require('./utils');
-var ajax = require('./ajax');
+var ajax = require('pouchdb-ajax');
 var Checkpointer = require('./checkpointer');
 
 exports.load = utils.toPromise(function (url, opts, callback) {
@@ -573,7 +171,7 @@ if (typeof window !== 'undefined' && window.PouchDB) {
   window.PouchDB.plugin(exports);
 }
 
-},{"./ajax":1,"./checkpointer":3,"./utils":7}],6:[function(require,module,exports){
+},{"./checkpointer":1,"./utils":4,"pouchdb-ajax":29}],3:[function(require,module,exports){
 var process=require("__browserify_process"),global=typeof self !== "undefined" ? self : typeof window !== "undefined" ? window : {};'use strict';
 /* istanbul ignore next */
 var crypto = require('crypto');
@@ -696,7 +294,7 @@ module.exports = function (data, callback) {
   loadNextChunk();
 };
 
-},{"__browserify_process":10,"crypto":9,"spark-md5":31}],7:[function(require,module,exports){
+},{"__browserify_process":8,"crypto":7,"spark-md5":34}],4:[function(require,module,exports){
 var process=require("__browserify_process"),global=typeof self !== "undefined" ? self : typeof window !== "undefined" ? window : {};'use strict';
 
 var Promise;
@@ -707,10 +305,9 @@ if (typeof window !== 'undefined' && window.PouchDB) {
   Promise = typeof global.Promise === 'function' ? global.Promise : require('lie');
 }
 exports.uuid = require('./uuid');
+
 exports.extend = require('pouchdb-extend');
-exports.clone = function (obj) {
-  return exports.extend(true, {}, obj);
-};
+
 /* istanbul ignore next */
 exports.once = function (fun) {
   var called = false;
@@ -724,18 +321,8 @@ exports.once = function (fun) {
     }
   });
 };
-/* istanbul ignore next */
-exports.getArguments = function (fun) {
-  return function () {
-    var len = arguments.length;
-    var args = new Array(len);
-    var i = -1;
-    while (++i < len) {
-      args[i] = arguments[i];
-    }
-    return fun.call(this, args);
-  };
-};
+exports.getArguments = require('argsarray');
+
 /* istanbul ignore next */
 exports.toPromise = function (func) {
   //create the function we will be returning
@@ -816,7 +403,7 @@ exports.explain404 = function (str) {
     str + '\n\u2665 the PouchDB team');
   }
 };
-},{"./md5":6,"./uuid":8,"__browserify_process":10,"inherits":11,"lie":15,"pouchdb-extend":30}],8:[function(require,module,exports){
+},{"./md5":3,"./uuid":5,"__browserify_process":8,"argsarray":6,"inherits":9,"lie":13,"pouchdb-extend":33}],5:[function(require,module,exports){
 "use strict";
 
 // BEGIN Math.uuid.js
@@ -904,9 +491,29 @@ function uuid(len, radix) {
 module.exports = uuid;
 
 
-},{}],9:[function(require,module,exports){
+},{}],6:[function(require,module,exports){
+'use strict';
 
-},{}],10:[function(require,module,exports){
+module.exports = argsArray;
+
+function argsArray(fun) {
+  return function () {
+    var len = arguments.length;
+    if (len) {
+      var args = [];
+      var i = -1;
+      while (++i < len) {
+        args[i] = arguments[i];
+      }
+      return fun.call(this, args);
+    } else {
+      return fun.call(this, []);
+    }
+  };
+}
+},{}],7:[function(require,module,exports){
+
+},{}],8:[function(require,module,exports){
 // shim for using process in browser
 
 var process = module.exports = {};
@@ -961,7 +568,7 @@ process.chdir = function (dir) {
     throw new Error('process.chdir is not supported');
 };
 
-},{}],11:[function(require,module,exports){
+},{}],9:[function(require,module,exports){
 if (typeof Object.create === 'function') {
   // implementation from standard node.js 'util' module
   module.exports = function inherits(ctor, superCtor) {
@@ -986,13 +593,13 @@ if (typeof Object.create === 'function') {
   }
 }
 
-},{}],12:[function(require,module,exports){
+},{}],10:[function(require,module,exports){
 'use strict';
 
 module.exports = INTERNAL;
 
 function INTERNAL() {}
-},{}],13:[function(require,module,exports){
+},{}],11:[function(require,module,exports){
 'use strict';
 var Promise = require('./promise');
 var reject = require('./reject');
@@ -1036,7 +643,7 @@ function all(iterable) {
     }
   }
 }
-},{"./INTERNAL":12,"./handlers":14,"./promise":16,"./reject":19,"./resolve":20}],14:[function(require,module,exports){
+},{"./INTERNAL":10,"./handlers":12,"./promise":14,"./reject":17,"./resolve":18}],12:[function(require,module,exports){
 'use strict';
 var tryCatch = require('./tryCatch');
 var resolveThenable = require('./resolveThenable');
@@ -1082,14 +689,14 @@ function getThen(obj) {
     };
   }
 }
-},{"./resolveThenable":21,"./states":22,"./tryCatch":23}],15:[function(require,module,exports){
+},{"./resolveThenable":19,"./states":20,"./tryCatch":21}],13:[function(require,module,exports){
 module.exports = exports = require('./promise');
 
 exports.resolve = require('./resolve');
 exports.reject = require('./reject');
 exports.all = require('./all');
 exports.race = require('./race');
-},{"./all":13,"./promise":16,"./race":18,"./reject":19,"./resolve":20}],16:[function(require,module,exports){
+},{"./all":11,"./promise":14,"./race":16,"./reject":17,"./resolve":18}],14:[function(require,module,exports){
 'use strict';
 
 var unwrap = require('./unwrap');
@@ -1104,7 +711,7 @@ function Promise(resolver) {
     return new Promise(resolver);
   }
   if (typeof resolver !== 'function') {
-    throw new TypeError('reslover must be a function');
+    throw new TypeError('resolver must be a function');
   }
   this.state = states.PENDING;
   this.queue = [];
@@ -1135,7 +742,7 @@ Promise.prototype.then = function (onFulfilled, onRejected) {
   return promise;
 };
 
-},{"./INTERNAL":12,"./queueItem":17,"./resolveThenable":21,"./states":22,"./unwrap":24}],17:[function(require,module,exports){
+},{"./INTERNAL":10,"./queueItem":15,"./resolveThenable":19,"./states":20,"./unwrap":22}],15:[function(require,module,exports){
 'use strict';
 var handlers = require('./handlers');
 var unwrap = require('./unwrap');
@@ -1164,7 +771,7 @@ QueueItem.prototype.callRejected = function (value) {
 QueueItem.prototype.otherCallRejected = function (value) {
   unwrap(this.promise, this.onRejected, value);
 };
-},{"./handlers":14,"./unwrap":24}],18:[function(require,module,exports){
+},{"./handlers":12,"./unwrap":22}],16:[function(require,module,exports){
 'use strict';
 var Promise = require('./promise');
 var reject = require('./reject');
@@ -1205,7 +812,7 @@ function race(iterable) {
     });
   }
 }
-},{"./INTERNAL":12,"./handlers":14,"./promise":16,"./reject":19,"./resolve":20}],19:[function(require,module,exports){
+},{"./INTERNAL":10,"./handlers":12,"./promise":14,"./reject":17,"./resolve":18}],17:[function(require,module,exports){
 'use strict';
 
 var Promise = require('./promise');
@@ -1217,7 +824,7 @@ function reject(reason) {
 	var promise = new Promise(INTERNAL);
 	return handlers.reject(promise, reason);
 }
-},{"./INTERNAL":12,"./handlers":14,"./promise":16}],20:[function(require,module,exports){
+},{"./INTERNAL":10,"./handlers":12,"./promise":14}],18:[function(require,module,exports){
 'use strict';
 
 var Promise = require('./promise');
@@ -1252,7 +859,7 @@ function resolve(value) {
       return EMPTYSTRING;
   }
 }
-},{"./INTERNAL":12,"./handlers":14,"./promise":16}],21:[function(require,module,exports){
+},{"./INTERNAL":10,"./handlers":12,"./promise":14}],19:[function(require,module,exports){
 'use strict';
 var handlers = require('./handlers');
 var tryCatch = require('./tryCatch');
@@ -1285,13 +892,13 @@ function safelyResolveThenable(self, thenable) {
   }
 }
 exports.safely = safelyResolveThenable;
-},{"./handlers":14,"./tryCatch":23}],22:[function(require,module,exports){
+},{"./handlers":12,"./tryCatch":21}],20:[function(require,module,exports){
 // Lazy man's symbols for states
 
 exports.REJECTED = ['REJECTED'];
 exports.FULFILLED = ['FULFILLED'];
 exports.PENDING = ['PENDING'];
-},{}],23:[function(require,module,exports){
+},{}],21:[function(require,module,exports){
 'use strict';
 
 module.exports = tryCatch;
@@ -1307,7 +914,7 @@ function tryCatch(func, value) {
   }
   return out;
 }
-},{}],24:[function(require,module,exports){
+},{}],22:[function(require,module,exports){
 'use strict';
 
 var immediate = require('immediate');
@@ -1329,7 +936,7 @@ function unwrap(promise, func, value) {
     }
   });
 }
-},{"./handlers":14,"immediate":25}],25:[function(require,module,exports){
+},{"./handlers":12,"immediate":23}],23:[function(require,module,exports){
 'use strict';
 var types = [
   require('./nextTick'),
@@ -1371,7 +978,7 @@ function immediate(task) {
     scheduleDrain();
   }
 }
-},{"./messageChannel":26,"./mutation.js":27,"./nextTick":9,"./stateChange":28,"./timeout":29}],26:[function(require,module,exports){
+},{"./messageChannel":24,"./mutation.js":25,"./nextTick":7,"./stateChange":26,"./timeout":27}],24:[function(require,module,exports){
 var global=typeof self !== "undefined" ? self : typeof window !== "undefined" ? window : {};'use strict';
 
 exports.test = function () {
@@ -1390,7 +997,7 @@ exports.install = function (func) {
     channel.port2.postMessage(0);
   };
 };
-},{}],27:[function(require,module,exports){
+},{}],25:[function(require,module,exports){
 var global=typeof self !== "undefined" ? self : typeof window !== "undefined" ? window : {};'use strict';
 //based off rsvp https://github.com/tildeio/rsvp.js
 //license https://github.com/tildeio/rsvp.js/blob/master/LICENSE
@@ -1413,7 +1020,7 @@ exports.install = function (handle) {
     element.data = (called = ++called % 2);
   };
 };
-},{}],28:[function(require,module,exports){
+},{}],26:[function(require,module,exports){
 var global=typeof self !== "undefined" ? self : typeof window !== "undefined" ? window : {};'use strict';
 
 exports.test = function () {
@@ -1438,7 +1045,7 @@ exports.install = function (handle) {
     return handle;
   };
 };
-},{}],29:[function(require,module,exports){
+},{}],27:[function(require,module,exports){
 'use strict';
 exports.test = function () {
   return true;
@@ -1449,7 +1056,617 @@ exports.install = function (t) {
     setTimeout(t, 0);
   };
 };
-},{}],30:[function(require,module,exports){
+},{}],28:[function(require,module,exports){
+// hey guess what, we don't need this in the browser
+module.exports = {};
+},{}],29:[function(require,module,exports){
+var process=require("__browserify_process");"use strict";
+
+var request = require('request');
+var errors = require('pouchdb-errors');
+var getArguments = require('argsarray');
+var extend = require('pouchdb-extend');
+var buffer = require('./buffer');
+
+function clone(obj) {
+  return extend(true, {}, obj);
+}
+
+function ajax(options, adapterCallback) {
+
+  var requestCompleted = false;
+  var callback = getArguments(function (args) {
+    if (requestCompleted) {
+      return;
+    }
+    adapterCallback.apply(this, args);
+    requestCompleted = true;
+  });
+
+  if (typeof options === "function") {
+    callback = options;
+    options = {};
+  }
+
+  options = clone(options);
+
+  var defaultOptions = {
+    method : "GET",
+    headers: {},
+    json: true,
+    processData: true,
+    timeout: 10000,
+    cache: false
+  };
+
+  options = extend(true, defaultOptions, options);
+
+
+  function onSuccess(obj, resp, cb) {
+    if (!options.binary && !options.json && options.processData &&
+      typeof obj !== 'string') {
+      obj = JSON.stringify(obj);
+    } else if (!options.binary && options.json && typeof obj === 'string') {
+      try {
+        obj = JSON.parse(obj);
+      } catch (e) {
+        // Probably a malformed JSON from server
+        return cb(e);
+      }
+    }
+    if (Array.isArray(obj)) {
+      obj = obj.map(function (v) {
+        if (v.error || v.missing) {
+          return errors.generateErrorFromResponse(v);
+        } else {
+          return v;
+        }
+      });
+    }
+    cb(null, obj, resp);
+  }
+
+  function onError(err, cb) {
+    var errParsed, errObj;
+    if (err.code && err.status) {
+      var err2 = new Error(err.message || err.code);
+      err2.status = err.status;
+      return cb(err2);
+    }
+    try {
+      errParsed = JSON.parse(err.responseText);
+      //would prefer not to have a try/catch clause
+      errObj = errors.generateErrorFromResponse(errParsed);
+    } catch (e) {
+      errObj = errors.generateErrorFromResponse(err);
+    }
+    cb(errObj);
+  }
+
+
+  if (options.json) {
+    if (!options.binary) {
+      options.headers.Accept = 'application/json';
+    }
+    options.headers['Content-Type'] = options.headers['Content-Type'] ||
+    'application/json';
+  }
+
+  if (options.binary) {
+    options.encoding = null;
+    options.json = false;
+  }
+
+  if (!options.processData) {
+    options.json = false;
+  }
+
+  function defaultBody(data) {
+    if (process.browser) {
+      return '';
+    }
+    return new buffer('', 'binary');
+  }
+
+  return request(options, function (err, response, body) {
+    if (err) {
+      err.status = response ? response.statusCode : 400;
+      return onError(err, callback);
+    }
+
+    var error;
+    var content_type = response.headers && response.headers['content-type'];
+    var data = body || defaultBody();
+
+    // CouchDB doesn't always return the right content-type for JSON data, so
+    // we check for ^{ and }$ (ignoring leading/trailing whitespace)
+    if (!options.binary && (options.json || !options.processData) &&
+      typeof data !== 'object' &&
+      (/json/.test(content_type) ||
+      (/^[\s]*\{/.test(data) && /\}[\s]*$/.test(data)))) {
+      data = JSON.parse(data);
+    }
+
+    if (response.statusCode >= 200 && response.statusCode < 300) {
+      onSuccess(data, response, callback);
+    } else {
+      if (options.binary) {
+        data = JSON.parse(data.toString());
+      }
+      error = errors.generateErrorFromResponse(data);
+      error.status = response.statusCode;
+      callback(error);
+    }
+  });
+}
+
+module.exports = ajax;
+
+},{"./buffer":28,"__browserify_process":8,"argsarray":6,"pouchdb-errors":31,"pouchdb-extend":33,"request":32}],30:[function(require,module,exports){
+var global=typeof self !== "undefined" ? self : typeof window !== "undefined" ? window : {};"use strict";
+
+//Abstracts constructing a Blob object, so it also works in older
+//browsers that don't support the native Blob constructor. (i.e.
+//old QtWebKit versions, at least).
+function createBlob(parts, properties) {
+  parts = parts || [];
+  properties = properties || {};
+  try {
+    return new Blob(parts, properties);
+  } catch (e) {
+    if (e.name !== "TypeError") {
+      throw e;
+    }
+    var BlobBuilder = global.BlobBuilder ||
+                      global.MSBlobBuilder ||
+                      global.MozBlobBuilder ||
+                      global.WebKitBlobBuilder;
+    var builder = new BlobBuilder();
+    for (var i = 0; i < parts.length; i += 1) {
+      builder.append(parts[i]);
+    }
+    return builder.getBlob(properties.type);
+  }
+}
+
+//Can't find original post, but this is close
+//http://stackoverflow.com/questions/6965107/ (continues on next line)
+//converting-between-strings-and-arraybuffers
+function arrayBufferToBinaryString(buffer) {
+  var binary = "";
+  var bytes = new Uint8Array(buffer);
+  var length = bytes.byteLength;
+  for (var i = 0; i < length; i++) {
+    binary += String.fromCharCode(bytes[i]);
+  }
+  return binary;
+}
+
+// This used to be called "fixBinary", which wasn't a very evocative name
+// From http://stackoverflow.com/questions/14967647/ (continues on next line)
+// encode-decode-image-with-base64-breaks-image (2013-04-21)
+function binaryStringToArrayBuffer(bin) {
+  var length = bin.length;
+  var buf = new ArrayBuffer(length);
+  var arr = new Uint8Array(buf);
+  for (var i = 0; i < length; i++) {
+    arr[i] = bin.charCodeAt(i);
+  }
+  return buf;
+}
+
+// shim for browsers that don't support it
+function readAsBinaryString(blob, callback) {
+  var reader = new FileReader();
+  var hasBinaryString = typeof reader.readAsBinaryString === 'function';
+  reader.onloadend = function (e) {
+    var result = e.target.result || '';
+    if (hasBinaryString) {
+      return callback(result);
+    }
+    callback(arrayBufferToBinaryString(result));
+  };
+  if (hasBinaryString) {
+    reader.readAsBinaryString(blob);
+  } else {
+    reader.readAsArrayBuffer(blob);
+  }
+}
+
+// simplified API. universal browser support is assumed
+function readAsArrayBuffer(blob, callback) {
+  var reader = new FileReader();
+  reader.onloadend = function (e) {
+    var result = e.target.result || new ArrayBuffer(0);
+    callback(result);
+  };
+  reader.readAsArrayBuffer(blob);
+}
+
+module.exports = {
+  createBlob: createBlob,
+  readAsArrayBuffer: readAsArrayBuffer,
+  readAsBinaryString: readAsBinaryString,
+  binaryStringToArrayBuffer: binaryStringToArrayBuffer,
+  arrayBufferToBinaryString: arrayBufferToBinaryString
+};
+
+
+},{}],31:[function(require,module,exports){
+"use strict";
+
+var inherits = require('inherits');
+inherits(PouchError, Error);
+
+function PouchError(opts) {
+  Error.call(opts.reason);
+  this.status = opts.status;
+  this.name = opts.error;
+  this.message = opts.reason;
+  this.error = true;
+}
+
+PouchError.prototype.toString = function () {
+  return JSON.stringify({
+    status: this.status,
+    name: this.name,
+    message: this.message
+  });
+};
+
+exports.UNAUTHORIZED = new PouchError({
+  status: 401,
+  error: 'unauthorized',
+  reason: "Name or password is incorrect."
+});
+
+exports.MISSING_BULK_DOCS = new PouchError({
+  status: 400,
+  error: 'bad_request',
+  reason: "Missing JSON list of 'docs'"
+});
+
+exports.MISSING_DOC = new PouchError({
+  status: 404,
+  error: 'not_found',
+  reason: 'missing'
+});
+
+exports.REV_CONFLICT = new PouchError({
+  status: 409,
+  error: 'conflict',
+  reason: 'Document update conflict'
+});
+
+exports.INVALID_ID = new PouchError({
+  status: 400,
+  error: 'invalid_id',
+  reason: '_id field must contain a string'
+});
+
+exports.MISSING_ID = new PouchError({
+  status: 412,
+  error: 'missing_id',
+  reason: '_id is required for puts'
+});
+
+exports.RESERVED_ID = new PouchError({
+  status: 400,
+  error: 'bad_request',
+  reason: 'Only reserved document ids may start with underscore.'
+});
+
+exports.NOT_OPEN = new PouchError({
+  status: 412,
+  error: 'precondition_failed',
+  reason: 'Database not open'
+});
+
+exports.UNKNOWN_ERROR = new PouchError({
+  status: 500,
+  error: 'unknown_error',
+  reason: 'Database encountered an unknown error'
+});
+
+exports.BAD_ARG = new PouchError({
+  status: 500,
+  error: 'badarg',
+  reason: 'Some query argument is invalid'
+});
+
+exports.INVALID_REQUEST = new PouchError({
+  status: 400,
+  error: 'invalid_request',
+  reason: 'Request was invalid'
+});
+
+exports.QUERY_PARSE_ERROR = new PouchError({
+  status: 400,
+  error: 'query_parse_error',
+  reason: 'Some query parameter is invalid'
+});
+
+exports.DOC_VALIDATION = new PouchError({
+  status: 500,
+  error: 'doc_validation',
+  reason: 'Bad special document member'
+});
+
+exports.BAD_REQUEST = new PouchError({
+  status: 400,
+  error: 'bad_request',
+  reason: 'Something wrong with the request'
+});
+
+exports.NOT_AN_OBJECT = new PouchError({
+  status: 400,
+  error: 'bad_request',
+  reason: 'Document must be a JSON object'
+});
+
+exports.DB_MISSING = new PouchError({
+  status: 404,
+  error: 'not_found',
+  reason: 'Database not found'
+});
+
+exports.IDB_ERROR = new PouchError({
+  status: 500,
+  error: 'indexed_db_went_bad',
+  reason: 'unknown'
+});
+
+exports.WSQ_ERROR = new PouchError({
+  status: 500,
+  error: 'web_sql_went_bad',
+  reason: 'unknown'
+});
+
+exports.LDB_ERROR = new PouchError({
+  status: 500,
+  error: 'levelDB_went_went_bad',
+  reason: 'unknown'
+});
+
+exports.FORBIDDEN = new PouchError({
+  status: 403,
+  error: 'forbidden',
+  reason: 'Forbidden by design doc validate_doc_update function'
+});
+
+exports.INVALID_REV = new PouchError({
+  status: 400,
+  error: 'bad_request',
+  reason: 'Invalid rev format'
+});
+
+exports.FILE_EXISTS = new PouchError({
+  status: 412,
+  error: 'file_exists',
+  reason: 'The database could not be created, the file already exists.'
+});
+
+exports.MISSING_STUB = new PouchError({
+  status: 412,
+  error: 'missing_stub'
+});
+
+exports.error = function (error, reason, name) {
+  function CustomPouchError(reason) {
+    // inherit error properties from our parent error manually
+    // so as to allow proper JSON parsing.
+    /* jshint ignore:start */
+    for (var p in error) {
+      if (typeof error[p] !== 'function') {
+        this[p] = error[p];
+      }
+    }
+    /* jshint ignore:end */
+    if (name !== undefined) {
+      this.name = name;
+    }
+    if (reason !== undefined) {
+      this.reason = reason;
+    }
+  }
+  CustomPouchError.prototype = PouchError.prototype;
+  return new CustomPouchError(reason);
+};
+
+// Find one of the errors defined above based on the value
+// of the specified property.
+// If reason is provided prefer the error matching that reason.
+// This is for differentiating between errors with the same name and status,
+// eg, bad_request.
+exports.getErrorTypeByProp = function (prop, value, reason) {
+  var errors = exports;
+  var keys = Object.keys(errors).filter(function (key) {
+    var error = errors[key];
+    return typeof error !== 'function' && error[prop] === value;
+  });
+  var key = reason && keys.filter(function (key) {
+        var error = errors[key];
+        return error.message === reason;
+      })[0] || keys[0];
+  return (key) ? errors[key] : null;
+};
+
+exports.generateErrorFromResponse = function (res) {
+  var error, errName, errType, errMsg, errReason;
+  var errors = exports;
+
+  errName = (res.error === true && typeof res.name === 'string') ?
+              res.name :
+              res.error;
+  errReason = res.reason;
+  errType = errors.getErrorTypeByProp('name', errName, errReason);
+
+  if (res.missing ||
+      errReason === 'missing' ||
+      errReason === 'deleted' ||
+      errName === 'not_found') {
+    errType = errors.MISSING_DOC;
+  } else if (errName === 'doc_validation') {
+    // doc validation needs special treatment since
+    // res.reason depends on the validation error.
+    // see utils.js
+    errType = errors.DOC_VALIDATION;
+    errMsg = errReason;
+  } else if (errName === 'bad_request' && errType.message !== errReason) {
+    // if bad_request error already found based on reason don't override.
+
+    // attachment errors.
+    if (errReason.indexOf('unknown stub attachment') === 0) {
+      errType = errors.MISSING_STUB;
+      errMsg = errReason;
+    } else {
+      errType = errors.BAD_REQUEST;
+    }
+  }
+
+  // fallback to error by statys or unknown error.
+  if (!errType) {
+    errType = errors.getErrorTypeByProp('status', res.status, errReason) ||
+                errors.UNKNOWN_ERROR;
+  }
+
+  error = errors.error(errType, errReason, errName);
+
+  // Keep custom message.
+  if (errMsg) {
+    error.message = errMsg;
+  }
+
+  // Keep helpful response data in our error messages.
+  if (res.id) {
+    error.id = res.id;
+  }
+  if (res.status) {
+    error.status = res.status;
+  }
+  if (res.statusText) {
+    error.name = res.statusText;
+  }
+  if (res.missing) {
+    error.missing = res.missing;
+  }
+
+  return error;
+};
+
+
+},{"inherits":9}],32:[function(require,module,exports){
+'use strict';
+
+var utils =  require('pouchdb-binary-util');
+var createBlob = utils.createBlob;
+var readAsBinaryString = utils.readAsBinaryString;
+var binaryStringToArrayBuffer = utils.binaryStringToArrayBuffer;
+
+module.exports = function(options, callback) {
+
+  var xhr, timer, hasUpload;
+
+  var abortReq = function () {
+    xhr.abort();
+  };
+
+  if (options.xhr) {
+    xhr = new options.xhr();
+  } else {
+    xhr = new XMLHttpRequest();
+  }
+
+  // cache-buster, specifically designed to work around IE's aggressive caching
+  // see http://www.dashbay.com/2011/05/internet-explorer-caches-ajax/
+  if (options.method === 'GET' && !options.cache) {
+    var hasArgs = options.url.indexOf('?') !== -1;
+    options.url += (hasArgs ? '&' : '?') + '_nonce=' + Date.now();
+  }
+
+  xhr.open(options.method, options.url);
+  xhr.withCredentials = true;
+
+  if (options.json) {
+    options.headers.Accept = 'application/json';
+    options.headers['Content-Type'] = options.headers['Content-Type'] ||
+      'application/json';
+    if (options.body &&
+        options.processData &&
+        typeof options.body !== "string") {
+      options.body = JSON.stringify(options.body);
+    }
+  }
+
+  if (options.binary) {
+    xhr.responseType = 'arraybuffer';
+  }
+
+  if (!('body' in options)) {
+    options.body = null;
+  }
+
+  for (var key in options.headers) {
+    if (options.headers.hasOwnProperty(key)) {
+      xhr.setRequestHeader(key, options.headers[key]);
+    }
+  }
+
+  if (options.timeout > 0) {
+    timer = setTimeout(abortReq, options.timeout);
+    xhr.onprogress = function () {
+      clearTimeout(timer);
+      timer = setTimeout(abortReq, options.timeout);
+    };
+    if (typeof hasUpload === 'undefined') {
+      // IE throws an error if you try to access it directly
+      hasUpload = Object.keys(xhr).indexOf('upload') !== -1;
+    }
+    if (hasUpload) { // does not exist in ie9
+      xhr.upload.onprogress = xhr.onprogress;
+    }
+  }
+
+  xhr.onreadystatechange = function () {
+    if (xhr.readyState !== 4) {
+      return;
+    }
+
+    var response = {
+      statusCode: xhr.status
+    };
+
+    if (xhr.status >= 200 && xhr.status < 300) {
+      var data;
+      if (options.binary) {
+        data = createBlob([xhr.response || ''], {
+          type: xhr.getResponseHeader('Content-Type')
+        });
+      } else {
+        data = xhr.responseText;
+      }
+      callback(null, response, data);
+    } else {
+      var err = {};
+      try {
+        err = JSON.parse(xhr.response);
+      } catch(e) {}
+      callback(err, response);
+    }
+  };
+
+  if (options.body && (options.body instanceof Blob)) {
+    readAsBinaryString(options.body, function (binary) {
+      xhr.send(binaryStringToArrayBuffer(binary));
+    });
+  } else {
+    xhr.send(options.body);
+  }
+
+  return {abort: abortReq};
+};
+
+},{"pouchdb-binary-util":30}],33:[function(require,module,exports){
 "use strict";
 
 // Extends method
@@ -1630,7 +1847,7 @@ module.exports = extend;
 
 
 
-},{}],31:[function(require,module,exports){
+},{}],34:[function(require,module,exports){
 /*jshint bitwise:false*/
 /*global unescape*/
 
@@ -2231,5 +2448,5 @@ module.exports = extend;
     return SparkMD5;
 }));
 
-},{}]},{},[5])
+},{}]},{},[2])
 ;
