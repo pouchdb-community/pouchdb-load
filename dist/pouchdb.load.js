@@ -18,7 +18,13 @@ function updateCheckpoint(db, id, checkpoint, returnValue) {
       return;
     }
     doc.last_seq = checkpoint;
-    return db.put(doc);
+    return db.put(doc)["catch"](function (err) {
+      if (err.status === 409) {
+        // retry; someone is trying to write a checkpoint simultaneously
+        return updateCheckpoint(db, id, checkpoint, returnValue);
+      }
+      throw err;
+    });
   });
 }
 /* istanbul ignore next */
@@ -91,6 +97,7 @@ Checkpointer.prototype.getCheckpoint = function () {
 };
 /* istanbul ignore next */
 module.exports = Checkpointer;
+
 },{"./utils":4}],2:[function(require,module,exports){
 'use strict';
 

@@ -1,6 +1,6 @@
 {
   "name": "pouchdb-load",
-  "version": "1.3.2",
+  "version": "1.3.3",
   "description": "PouchDB Load - load dumped CouchDB/PouchDB databases on the client",
   "main": "./lib/index.js",
   "repository": {
