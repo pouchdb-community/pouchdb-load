@@ -152,8 +152,9 @@ exports.load = utils.toPromise(function (url, opts, callback) {
       }
 
       db.info().then(function (info) {
-        var src = new db.constructor(opts.proxy,
-          utils.extend(true, {}, db.__opts, opts));
+        var srcOpts = utils.extend(true, {}, db.__opts, opts);
+        delete srcOpts.adapter;
+        var src = new db.constructor(opts.proxy, srcOpts);
         var target = new db.constructor(info.db_name,
           utils.extend(true, {}, db.__opts, opts));
         var replIdOpts = {};
