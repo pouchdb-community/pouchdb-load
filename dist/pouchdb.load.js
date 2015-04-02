@@ -180,6 +180,10 @@ if (typeof window !== 'undefined' && window.PouchDB) {
   window.PouchDB.plugin(exports);
 }
 
+if(typeof define === 'function' && define.amd) {
+    define(exports);
+}
+
 },{"./checkpointer":1,"./utils":4,"pouchdb-ajax":29}],3:[function(require,module,exports){
 var process=require("__browserify_process"),global=typeof self !== "undefined" ? self : typeof window !== "undefined" ? window : {};'use strict';
 /* istanbul ignore next */
