@@ -147,7 +147,11 @@ function clientServerTests(dbName) {
 
     beforeEach(function () {
       this.timeout(30000);
-      db = new Pouch(dbs[0]);
+      if (process.browser) {
+        db = new Pouch(dbs[0], {adapter: 'idb'});
+      } else {
+        db = new Pouch(dbs[0]);
+      }
       remote = new Pouch(dbs[1]);
       if (typeof process !== 'undefined' && !process.browser) {
         server = httpServer.createServer();
