@@ -43,7 +43,7 @@ API
 
 This plugin exposes a single method on your database, `load()`:
 
-### db.load(url [, options] [, callback])
+### db.load(urlOrString [, options] [, callback])
 
 This method returns a Promise or calls your callback, if you prefer the callback style.
 
@@ -94,6 +94,21 @@ series.then(function () {
   // done loading!
 }).catch(function (err) {
   // HTTP error or something like that
+});
+```
+
+#### Loading from a string rather than a URL
+
+Instead of a URL, you can also load directly from a string. This is useful if you used [`pouchdb-replication-stream`](https://github.com/nolanlawson/pouchdb-replication-stream) to dump directly to a string, or if you are loading your dumpfile through some other mechanism than ajax (websockets, WebRTC, etc.):
+
+```js
+var db = new PouchDB('my-awesome-db');
+var myDumpedString = getDumpedStringSomehow();
+
+db.load(myDumpedString).then(function () {
+  // done loading!
+}).catch(function (err) {
+  // any possible errors
 });
 ```
 

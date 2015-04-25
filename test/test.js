@@ -57,7 +57,7 @@ function tests(dbName, dbType) {
     });
     afterEach(function () {
       this.timeout(30000);
-      return Pouch.destroy(dbName).then(function () {
+      return db.destroy().then(function () {
         if (typeof process !== 'undefined'  && !process.browser) {
           server.close();
         }
@@ -158,8 +158,8 @@ function clientServerTests(dbName) {
     });
     afterEach(function () {
       this.timeout(30000);
-      return Pouch.destroy(dbs[0]).then(function () {
-        return Pouch.destroy(dbs[1]);
+      return db.destroy().then(function () {
+        return remote.destroy();
       }).then(function () {
         if (typeof process !== 'undefined'  && !process.browser) {
           server.close();
@@ -312,6 +312,48 @@ function clientServerTests(dbName) {
         return remote.allDocs({keys: ['quux']});
       }).then(function (res) {
         should.not.exist(res.rows[0].error, 'quux in remote');
+      });
+    });
+
+    it('loads from a string', function () {
+      var str = '{"version":"1.0.0","db_type":"http","start_time":"2014-11-02T18:57:26.169Z",' +
+        '"db_info":{"db_name":"foobar","doc_count":2,"doc_del_count":1,"update_seq":4,' +
+        '"purge_seq":0,"compact_running":false,"disk_size":16479,"data_size":419,"instance' +
+        '_start_time":"1414953985168119","disk_format_version":6,"committed_update_seq":4,' +
+        '"host":"http://localhost:5984/foobar/","auto_compaction":false}}\n{"docs":[{"_id"' +
+        ':"foo","_rev":"1-x"}]}\n{"seq":1}\n{"docs":[{"_id":"bar","_rev":"1-y"}]}\n{"seq":2}' +
+        '\n{"docs":[{"_id": "baz", "_rev": "1-w"}]}\n{"seq":3}';
+
+      return db.load(str).then(function () {
+        return db.allDocs();
+      }).then(function (res) {
+        res.should.deep.equal({
+          "total_rows": 3,
+          "offset": 0,
+          "rows": [
+            {
+              "id": "bar",
+              "key": "bar",
+              "value": {
+                "rev": "1-y"
+              }
+            },
+            {
+              "id": "baz",
+              "key": "baz",
+              "value": {
+                "rev": "1-w"
+              }
+            },
+            {
+              "id": "foo",
+              "key": "foo",
+              "value": {
+                "rev": "1-x"
+              }
+            }
+          ]
+        });
       });
     });
   });
