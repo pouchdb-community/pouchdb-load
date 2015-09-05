@@ -315,6 +315,38 @@ function clientServerTests(dbName) {
       });
     });
 
+    it('only fetches with since=seq when transitioning, /w queryparams', function () {
+      var url = getUrl('foobar.txt');
+      var docs = [
+        {"_id": "quux", "_rev": "1-q"}
+      ];
+      var query_params = {batch_size: 10};
+      return remote.bulkDocs(docs, {new_edits: false}).then(function () {
+        return db.load(url, {
+          proxy: dbs[1],
+          query_params: query_params
+        });
+      }).then(function () {
+        return db.info();
+      }).then(function (info) {
+        info.doc_count.should.equal(3);
+      }).then(function () {
+        return db.replicate.from(remote, {
+          query_params: query_params
+        });
+      }).then(function () {
+        return db.info();
+      }).then(function (info) {
+        info.doc_count.should.equal(3, 'quux never loaded, because its seq is 1');
+        return db.allDocs({keys: ['quux']});
+      }).then(function (res) {
+        should.exist(res.rows[0].error, 'quux not in local');
+        return remote.allDocs({keys: ['quux']});
+      }).then(function (res) {
+        should.not.exist(res.rows[0].error, 'quux in remote');
+      });
+    });
+
     it('loads from a string', function () {
       var str = '{"version":"1.0.0","db_type":"http","start_time":"2014-11-02T18:57:26.169Z",' +
         '"db_info":{"db_name":"foobar","doc_count":2,"doc_del_count":1,"update_seq":4,' +
