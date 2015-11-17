@@ -239,6 +239,38 @@ function clientServerTests(dbName) {
       });
     });
 
+    it('only transition replication when db has adapter', function () {
+      var adapter = (process.browser ? 'websql' : 'leveldb');
+      var db = new Pouch(dbs[0], { adapter: adapter });
+      if (!db.adapter) {
+        it.skip('websql not supported by this browser');
+        return;
+      }
+      var url = getUrl('foobar.txt');
+      var docs = [
+        {"_id": "quux", "_rev": "1-q"}
+      ];
+      return remote.bulkDocs(docs, {new_edits: false}).then(function () {
+        return db.load(url, {proxy: dbs[1]});
+      }).then(function () {
+        return db.info();
+      }).then(function (info) {
+        info.doc_count.should.equal(3);
+      }).then(function () {
+        return db.replicate.from(remote);
+      }).then(function () {
+        return db.info();
+      }).then(function (info) {
+        info.doc_count.should.equal(3, 'quux never loaded, because its seq is 1');
+        return db.allDocs({keys: ['quux']});
+      }).then(function (res) {
+        should.exist(res.rows[0].error, 'quux not in local');
+        return remote.allDocs({keys: ['quux']});
+      }).then(function (res) {
+        should.not.exist(res.rows[0].error, 'quux in remote');
+      });
+    });
+
     it('transitions from initial to regular replication, w/ a filter', function () {
       var url = getUrl('foobar.txt');
       var docs1 = [
