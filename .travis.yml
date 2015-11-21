@@ -4,7 +4,9 @@ services:
   - couchdb
 
 node_js:
-  - "0.12"
+  - "stable"
+addons:
+  firefox: "41.0.1"
 script: npm run $COMMAND
 before_script:
   - "export DISPLAY=:99.0"
