@@ -3,24 +3,11 @@ language: node_js
 services:
   - couchdb
 
+sudo: false
 node_js:
-  - "0.12"
+  - "stable"
+firefox: "41.0.1"
 script: npm run $COMMAND
-before_script:
-  - "export DISPLAY=:99.0"
-  - "sh -e /etc/init.d/xvfb start"
-  - "sleep 5"
-
-    # Workaround for Selenium #3280 issue
-  - "sudo sed -i 's/^127\\.0\\.0\\.1.*$/127.0.0.1 localhost/' /etc/hosts"
-
-    # Lets know what CouchDB we are playing with
-    # and make sure its logging debug
-  - "curl -X GET http://127.0.0.1:5984/"
-  - "curl -X PUT http://127.0.0.1:5984/_config/log/level -d '\"debug\"'"
-
-after_failure:
-  - "curl -X GET http://127.0.0.1:5984/_log?bytes=1000000"
 
 env:
   matrix:
@@ -32,4 +19,3 @@ env:
 branches:
   only:
   - master
-  - /^pull*$/
