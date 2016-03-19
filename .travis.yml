@@ -6,14 +6,12 @@ services:
 sudo: false
 node_js:
   - "stable"
-addons:
-  - firefox: "41.0.1"
 script: npm run $COMMAND
 
 env:
   matrix:
   - COMMAND=test
-  - CLIENT=selenium:firefox:41.0.1 COMMAND=test
+  - CLIENT=selenium:firefox COMMAND=test
   - CLIENT=selenium:phantomjs COMMAND=test
   - COMMAND=coverage
 
