@@ -6,7 +6,8 @@ services:
 sudo: false
 node_js:
   - "stable"
-firefox: "41.0.1"
+addons:
+  - firefox: "41.0.1"
 script: npm run $COMMAND
 
 env:
