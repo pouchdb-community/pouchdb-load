@@ -66,5 +66,6 @@
     "./lib/ajax.js": "./lib/ajax-browser.js",
     "http-server": false,
     "crypto": false
-  }
+  },
+  "files": ["lib", "dist"]
 }
