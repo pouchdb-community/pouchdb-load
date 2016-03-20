@@ -147,6 +147,8 @@ db.load('http://example.com/my-dump-file.txt', {
 });
 ```
 
+The same goes for `view` and `query_params`.
+
 #### Custom ajax options
 
 You can also include ajax options in the `options`:
