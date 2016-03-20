@@ -1067,11 +1067,11 @@ module.exports = require('../lib/extras/promise');
 },{"../lib/extras/promise":18}],15:[function(require,module,exports){
 'use strict';
 
+function _interopDefault (ex) { return (ex && (typeof ex === 'object') && 'default' in ex) ? ex['default'] : ex; }
+
+var lie = _interopDefault(require('lie'));
 var jsExtend = require('js-extend');
-var inherits = require('inherits');
-inherits = 'default' in inherits ? inherits['default'] : inherits;
-var lie = require('lie');
-lie = 'default' in lie ? lie['default'] : lie;
+var inherits = _interopDefault(require('inherits'));
 
 // Abstracts constructing a Blob object, so it also works in older
 // browsers that don't support the native Blob constructor (e.g.
@@ -1812,9 +1812,10 @@ function ajax(opts, callback) {
 
   var isSafari = ua.indexOf('safari') !== -1 && ua.indexOf('chrome') === -1;
   var isIE = ua.indexOf('msie') !== -1;
+  var isEdge = ua.indexOf('edge') !== -1;
 
   var shouldCacheBust = (isSafari && opts.method === 'POST') ||
-    (isIE && opts.method === 'GET');
+    ((isIE || isEdge) && opts.method === 'GET');
 
   var cache = 'cache' in opts ? opts.cache : true;
 
@@ -1830,10 +1831,10 @@ module.exports = ajax;
 },{"inherits":6,"js-extend":7,"lie":19}],16:[function(require,module,exports){
 var global=typeof self !== "undefined" ? self : typeof window !== "undefined" ? window : {};'use strict';
 
-var pouchCollate = require('pouchdb-collate');
-pouchCollate = 'default' in pouchCollate ? pouchCollate['default'] : pouchCollate;
-var lie = require('lie');
-lie = 'default' in lie ? lie['default'] : lie;
+function _interopDefault (ex) { return (ex && (typeof ex === 'object') && 'default' in ex) ? ex['default'] : ex; }
+
+var lie = _interopDefault(require('lie'));
+var pouchCollate = _interopDefault(require('pouchdb-collate'));
 
 /* istanbul ignore next */
 var PouchPromise = typeof Promise === 'function' ? Promise : lie;
@@ -1940,9 +1941,7 @@ Checkpointer.prototype.updateSource = function (checkpoint, session) {
   return updateCheckpoint(this.src, this.id, checkpoint,
       session, this.returnValue)
     .catch(function (err) {
-      var isForbidden = typeof err.status === 'number' &&
-        Math.floor(err.status / 100) === 4;
-      if (isForbidden) {
+      if (isForbiddenError(err)) {
         self.readOnlySource = true;
         return true;
       }
@@ -1968,6 +1967,10 @@ var comparisons = {
 Checkpointer.prototype.getCheckpoint = function () {
   var self = this;
   return self.target.get(self.id).then(function (targetDoc) {
+    if (self.readOnlySource) {
+      return PouchPromise.resolve(targetDoc.last_seq);
+    }
+
     return self.src.get(self.id).then(function (sourceDoc) {
       // Since we can't migrate an old version doc to a new one
       // (no session id), we just go with the lowest seq in this case
@@ -1996,7 +1999,7 @@ Checkpointer.prototype.getCheckpoint = function () {
         }).then(function () {
           return LOWEST_SEQ;
         }, function (err) {
-          if (err.status === 401) {
+          if (isForbiddenError(err)) {
             self.readOnlySource = true;
             return targetDoc.last_seq;
           }
@@ -2080,17 +2083,20 @@ function hasSessionId (sessionId, history) {
   return hasSessionId(sessionId, rest);
 }
 
+function isForbiddenError (err) {
+  return typeof err.status === 'number' && Math.floor(err.status / 100) === 4;
+}
+
 module.exports = Checkpointer;
 },{"lie":19,"pouchdb-collate":8}],17:[function(require,module,exports){
 var process=require("__browserify_process"),global=typeof self !== "undefined" ? self : typeof window !== "undefined" ? window : {};'use strict';
 
+function _interopDefault (ex) { return (ex && (typeof ex === 'object') && 'default' in ex) ? ex['default'] : ex; }
+
+var lie = _interopDefault(require('lie'));
+var getArguments = _interopDefault(require('argsarray'));
+var Md5 = _interopDefault(require('spark-md5'));
 var pouchdbCollate = require('pouchdb-collate');
-var lie = require('lie');
-lie = 'default' in lie ? lie['default'] : lie;
-var Md5 = require('spark-md5');
-Md5 = 'default' in Md5 ? Md5['default'] : Md5;
-var getArguments = require('argsarray');
-getArguments = 'default' in getArguments ? getArguments['default'] : getArguments;
 
 /* istanbul ignore next */
 var PouchPromise = typeof Promise === 'function' ? Promise : lie;
@@ -2325,8 +2331,9 @@ module.exports = generateReplicationId;
 },{"__browserify_process":21,"argsarray":4,"lie":19,"pouchdb-collate":8,"spark-md5":20}],18:[function(require,module,exports){
 'use strict';
 
-var lie = require('lie');
-lie = 'default' in lie ? lie['default'] : lie;
+function _interopDefault (ex) { return (ex && (typeof ex === 'object') && 'default' in ex) ? ex['default'] : ex; }
+
+var lie = _interopDefault(require('lie'));
 
 /* istanbul ignore next */
 var PouchPromise = typeof Promise === 'function' ? Promise : lie;
