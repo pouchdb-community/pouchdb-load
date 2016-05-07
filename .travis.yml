@@ -3,7 +3,7 @@ services:
   - couchdb
 sudo: false
 node_js:
-  - "stable"
+  - "5"
 script: npm run $COMMAND
 before_script:
   - "export DISPLAY=:99.0"
