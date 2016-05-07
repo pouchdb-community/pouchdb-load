@@ -37,46 +37,41 @@ function loadString(db, data, opts, callback) {
   var docs = parsedDump.docs;
   var lastSeq = parsedDump.lastSeq;
 
-  var called = false;
-  function done(res) {
-    if (!called) {
-      callback(res);
-    }
-    called = true;
+  function writeProxyCheckpoint() {
+    return db.info().then(function (info) {
+      var src = new db.constructor(opts.proxy,
+        utils.extend(true, {}, {}, opts));
+      var target = new db.constructor(info.db_name,
+        utils.extend(true, {}, db.__opts, opts));
+      var replIdOpts = {};
+      if (opts.filter) {
+        replIdOpts.filter = opts.filter;
+      }
+      if (opts.query_params) {
+        replIdOpts.query_params = opts.query_params;
+      }
+      if (opts.view) {
+        replIdOpts.view = opts.view;
+      }
+
+      return genReplicationId(src, target, replIdOpts).then(function (replId) {
+        var state = {
+          cancelled: false
+        };
+        var checkpointer = new Checkpointer(src, target, replId, state);
+        return checkpointer.writeCheckpoint(lastSeq);
+      });
+    });
   }
 
   db.bulkDocs({docs: docs, new_edits: false}).then(function () {
     if (!opts.proxy) {
-      return done();
+      return;
     }
-
-    return db.info();
-  }).then(function (info) {
-    var src = new db.constructor(opts.proxy,
-      utils.extend(true, {}, {}, opts));
-    var target = new db.constructor(info.db_name,
-      utils.extend(true, {}, db.__opts, opts));
-    var replIdOpts = {};
-    if (opts.filter) {
-      replIdOpts.filter = opts.filter;
-    }
-    if (opts.query_params) {
-      replIdOpts.query_params = opts.query_params;
-    }
-    if (opts.view) {
-      replIdOpts.view = opts.view;
-    }
-
-    return genReplicationId(src, target, replIdOpts).then(function (replId) {
-      var state = {
-        cancelled: false
-      };
-      var checkpointer = new Checkpointer(src, target, replId, state);
-      return checkpointer.writeCheckpoint(lastSeq);
-    });
+    return writeProxyCheckpoint();
   }).then(function () {
-    done();
-  }, done);
+    callback();
+  }, callback);
 }
 
 function loadUrl(db, url, opts, callback) {
@@ -1120,7 +1115,7 @@ var PouchPromise = typeof Promise === 'function' ? Promise : lie;
 function wrappedFetch() {
   var wrappedPromise = {};
 
-  var promise = new PouchPromise(function(resolve, reject) {
+  var promise = new PouchPromise(function (resolve, reject) {
     wrappedPromise.resolve = resolve;
     wrappedPromise.reject = reject;
   });
@@ -1135,9 +1130,9 @@ function wrappedFetch() {
 
   PouchPromise.resolve().then(function () {
     return fetch.apply(null, args);
-  }).then(function(response) {
+  }).then(function (response) {
     wrappedPromise.resolve(response);
-  }).catch(function(error) {
+  }).catch(function (error) {
     wrappedPromise.reject(error);
   });
 
@@ -1175,7 +1170,7 @@ function fetchRequest(options, callback) {
     fetchOptions.body = null;
   }
 
-  Object.keys(options.headers).forEach(function(key) {
+  Object.keys(options.headers).forEach(function (key) {
     if (options.headers.hasOwnProperty(key)) {
       headers.set(key, options.headers[key]);
     }
@@ -1184,13 +1179,13 @@ function fetchRequest(options, callback) {
   wrappedPromise = wrappedFetch(options.url, fetchOptions);
 
   if (options.timeout > 0) {
-    timer = setTimeout(function() {
+    timer = setTimeout(function () {
       wrappedPromise.reject(new Error('Load timeout for resource: ' +
         options.url));
     }, options.timeout);
   }
 
-  wrappedPromise.promise.then(function(fetchResponse) {
+  wrappedPromise.promise.then(function (fetchResponse) {
     response = {
       statusCode: fetchResponse.status
     };
@@ -1204,13 +1199,13 @@ function fetchRequest(options, callback) {
     }
 
     return fetchResponse.json();
-  }).then(function(result) {
+  }).then(function (result) {
     if (response.statusCode >= 200 && response.statusCode < 300) {
       callback(null, response, result);
     } else {
       callback(result, response);
     }
-  }).catch(function(error) {
+  }).catch(function (error) {
     callback(error, response);
   });
 
@@ -1220,8 +1215,14 @@ function fetchRequest(options, callback) {
 function xhRequest(options, callback) {
 
   var xhr, timer;
+  var timedout = false;
 
   var abortReq = function () {
+    xhr.abort();
+  };
+
+  var timeoutReq = function () {
+    timedout = true;
     xhr.abort();
   };
 
@@ -1269,10 +1270,12 @@ function xhRequest(options, callback) {
   }
 
   if (options.timeout > 0) {
-    timer = setTimeout(abortReq, options.timeout);
+    timer = setTimeout(timeoutReq, options.timeout);
     xhr.onprogress = function () {
       clearTimeout(timer);
-      timer = setTimeout(abortReq, options.timeout);
+      if(xhr.readyState !== 4) {
+        timer = setTimeout(timeoutReq, options.timeout);
+      }
     };
     if (typeof xhr.upload !== 'undefined') { // does not exist in ie9
       xhr.upload.onprogress = xhr.onprogress;
@@ -1300,9 +1303,14 @@ function xhRequest(options, callback) {
       callback(null, response, data);
     } else {
       var err = {};
-      try {
-        err = JSON.parse(xhr.response);
-      } catch(e) {}
+      if(timedout) {
+        err = new Error('ETIMEDOUT');
+        response.statusCode = 400;      // for consistency with node request
+      } else {
+        try {
+          err = JSON.parse(xhr.response);
+        } catch(e) {}
+      }
       callback(err, response);
     }
   };
@@ -1740,6 +1748,9 @@ function ajaxCore(options, callback) {
       err2.status = err.status;
       return cb(err2);
     }
+    if (err.message && err.message === 'ETIMEDOUT') {
+      return cb(err);
+    }
     // We always get code && status in node
     /* istanbul ignore next */
     try {
@@ -1814,12 +1825,16 @@ function ajax(opts, callback) {
   var isIE = ua.indexOf('msie') !== -1;
   var isEdge = ua.indexOf('edge') !== -1;
 
-  var shouldCacheBust = (isSafari && opts.method === 'POST') ||
-    ((isIE || isEdge) && opts.method === 'GET');
+  // it appears the new version of safari also caches GETs,
+  // see https://github.com/pouchdb/pouchdb/issues/5010
+  var shouldCacheBust = (isSafari ||
+    ((isIE || isEdge) && opts.method === 'GET'));
 
   var cache = 'cache' in opts ? opts.cache : true;
 
-  if (shouldCacheBust || !cache) {
+  var isBlobUrl = /^blob:/.test(opts.url); // don't append nonces for blob URLs
+
+  if (!isBlobUrl && (shouldCacheBust || !cache)) {
     var hasArgs = opts.url.indexOf('?') !== -1;
     opts.url += (hasArgs ? '&' : '?') + '_nonce=' + Date.now();
   }
@@ -1950,7 +1965,7 @@ Checkpointer.prototype.updateSource = function (checkpoint, session) {
 };
 
 var comparisons = {
-  "undefined": function(targetDoc, sourceDoc) {
+  "undefined": function (targetDoc, sourceDoc) {
     // This is the previous comparison function
     if (collate(targetDoc.last_seq, sourceDoc.last_seq) === 0) {
       return sourceDoc.last_seq;
@@ -1958,7 +1973,7 @@ var comparisons = {
     /* istanbul ignore next */
     return 0;
   },
-  "1": function(targetDoc, sourceDoc) {
+  "1": function (targetDoc, sourceDoc) {
     // This is the comparison function ported from CouchDB
     return compareReplicationLogs(sourceDoc, targetDoc).last_seq;
   }
@@ -2020,7 +2035,7 @@ Checkpointer.prototype.getCheckpoint = function () {
 // they come from here:
 // https://github.com/apache/couchdb-couch-replicator/blob/master/src/couch_replicator.erl#L863-L906
 
-function compareReplicationLogs (srcDoc, tgtDoc) {
+function compareReplicationLogs(srcDoc, tgtDoc) {
   if (srcDoc.session_id === tgtDoc.session_id) {
     return {
       last_seq: srcDoc.last_seq,
@@ -2033,7 +2048,7 @@ function compareReplicationLogs (srcDoc, tgtDoc) {
   return compareReplicationHistory(sourceHistory, targetHistory);
 }
 
-function compareReplicationHistory (sourceHistory, targetHistory) {
+function compareReplicationHistory(sourceHistory, targetHistory) {
   // the erlang loop via function arguments is not so easy to repeat in JS
   // therefore, doing this as recursion
   var S = sourceHistory[0];
@@ -2068,7 +2083,7 @@ function compareReplicationHistory (sourceHistory, targetHistory) {
   return compareReplicationHistory(sourceRest, targetRest);
 }
 
-function hasSessionId (sessionId, history) {
+function hasSessionId(sessionId, history) {
   var props = history[0];
   var rest = history.slice(1);
 
@@ -2083,7 +2098,7 @@ function hasSessionId (sessionId, history) {
   return hasSessionId(sessionId, rest);
 }
 
-function isForbiddenError (err) {
+function isForbiddenError(err) {
   return typeof err.status === 'number' && Math.floor(err.status / 100) === 4;
 }
 
