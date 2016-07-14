@@ -1,7 +1,7 @@
 /*jshint expr:true */
 'use strict';
 
-var Pouch = require('pouchdb');
+var Pouch = require('pouchdb-memory');
 var httpServer = require('http-server');
 
 var plugin = require('../lib');
@@ -13,15 +13,7 @@ chai.use(require("chai-as-promised"));
 var should = chai.should();
 var Promise = require('bluebird');
 
-var dbs;
-if (process.browser) {
-  dbs = 'testdb' + Math.random() +
-    ',http://localhost:5984/testdb' + Math.round(Math.random() * 100000);
-} else {
-  dbs = process.env.TEST_DB;
-}
-
-dbs = dbs.split(',');
+var dbs = ['testdb', 'http://localhost:5984/testdb'];
 
 dbs.forEach(function (db) {
   var dbType = /^http/.test(db) ? 'http' : 'local';
