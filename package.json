@@ -1,6 +1,6 @@
 {
   "name": "pouchdb-load",
-  "version": "1.4.5",
+  "version": "1.4.6",
   "description": "PouchDB Load - load dumped CouchDB/PouchDB databases on the client",
   "main": "./lib/index.js",
   "repository": {
@@ -24,7 +24,7 @@
     "test-browser": "zuul --no-coverage --phantom --ui mocha-bdd test/test.js",
     "jshint": "jshint -c .jshintrc lib test/test.js",
     "test": "npm run jshint && istanbul test ./node_modules/mocha/bin/_mocha test/test.js",
-    "build": "mkdirp dist && browserify . -s PouchDBLoad -t es3ify > dist/pouchdb.load.js && npm run min",
+    "build": "mkdirp dist && browserify . -p bundle-collapser/plugin -s PouchDBLoad -t es3ify > dist/pouchdb.load.js && npm run min",
     "min": "uglifyjs dist/pouchdb.load.js -mc > dist/pouchdb.load.min.js",
     "test-local": "zuul --no-coverage --local 9000 --ui mocha-bdd test/test.js",
     "coverage": "npm test --coverage && istanbul check-coverage --lines 100 --function 100 --statements 100 --branches 100"
@@ -40,6 +40,7 @@
   },
   "devDependencies": {
     "browserify": "^13.0.1",
+    "bundle-collapser": "^1.2.1",
     "chai": "^3.5.0",
     "chai-as-promised": "^5.3.0",
     "es3ify": "^0.1.3",
