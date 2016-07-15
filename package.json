@@ -57,7 +57,7 @@
     "zuul": "^3.10.1"
   },
   "browser": {
-    "httpserver": false
+    "http-server": false
   },
   "files": [
     "lib",

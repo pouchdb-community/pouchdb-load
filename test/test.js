@@ -11,7 +11,7 @@ var chai = require('chai');
 chai.use(require("chai-as-promised"));
 
 var should = chai.should();
-var Promise = require('bluebird');
+var Promise = require('pouchdb-promise');
 
 var dbs = ['testdb', 'http://localhost:5984/testdb'];
 
