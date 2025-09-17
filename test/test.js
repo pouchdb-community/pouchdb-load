@@ -173,65 +173,30 @@ function clientServerTests(dbName) {
       });
     });
 
-    it('transitions from initial to regular replication', function () {
+    it('sets a checkpoint so that replication from the proxy resumes from the last seq in the dump file', function () {
       var url = getUrl('foobar.txt');
-      var docs1 = [
-        {"_id": "foo", "_rev": "1-x"},
-        {"_id": "bar", "_rev": "1-y"},
-        {"_id": "baz", "_rev": "1-w"}
-      ];
-      var docs2 = [
-        {
-          "_id": "baz",
-          "_rev": "2-z",
-          "_deleted": true,
-          "_revisions": {"start": 2, "ids": ["z", "w"]}
+
+      return db.load(url, {proxy: dbs[1]}).then(function() {
+        return db.info();
+      }).then(function (info) {
+        info.doc_count.should.equal(3);
+        return plugin.getReplicationForDb(db, {proxy: dbs[1]});
+      }).then(function (repl) {
+        return Promise.all([
+          db.get(repl.checkpoint),
+          remote.get(repl.checkpoint)
+        ]);
+      }).then(function (docs) {
+        for (var doc of docs) {
+          doc.history.should.deep.equal([
+            { last_seq: '3-g1AAAABPeJzLYWBgYMxgTmEQTM4vTc5ISXLIyU9OzMnILy7JAUoxJTLksTD8B4KsDOZE5lygELu5maFFkqUBNi1ZAJQ9GHo' }
+          ]);
+          doc.last_seq.should.equal('3-g1AAAABPeJzLYWBgYMxgTmEQTM4vTc5ISXLIyU9OzMnILy7JAUoxJTLksTD8B4KsDOZE5lygELu5maFFkqUBNi1ZAJQ9GHo');
         }
-      ];
-      return remote.bulkDocs(docs1, {new_edits: false}).then(function () {
-        return remote.bulkDocs(docs2, {new_edits: false});
-      }).then(function () {
-        return db.load(url, {proxy: dbs[1]});
-      }).then(function () {
-        return db.info();
-      }).then(function (info) {
-        info.doc_count.should.equal(3);
-      }).then(function () {
-        return db.replicate.from(remote);
-      }).then(function () {
-        return db.info();
-      }).then(function (info) {
-        info.doc_count.should.equal(2);
       });
     });
 
-    it('only fetches with since=seq when transitioning', function () {
-      var url = getUrl('foobar.txt');
-      var docs = [
-        {"_id": "quux", "_rev": "1-q"}
-      ];
-      return remote.bulkDocs(docs, {new_edits: false}).then(function () {
-        return db.load(url, {proxy: dbs[1]});
-      }).then(function () {
-        return db.info();
-      }).then(function (info) {
-        info.doc_count.should.equal(3);
-      }).then(function () {
-        return db.replicate.from(remote);
-      }).then(function () {
-        return db.info();
-      }).then(function (info) {
-        info.doc_count.should.equal(3, 'quux never loaded, because its seq is 1');
-        return db.allDocs({keys: ['quux']});
-      }).then(function (res) {
-        should.exist(res.rows[0].error, 'quux not in local');
-        return remote.allDocs({keys: ['quux']});
-      }).then(function (res) {
-        should.not.exist(res.rows[0].error, 'quux in remote');
-      });
-    });
-
-    it('only transition replication when db has adapter', function () {
+    it('only transitions replication when db has adapter', function () {
       var adapter = (process.browser ? 'websql' : 'leveldb');
       var db = new Pouch(dbs[0], { adapter: adapter });
       if (!db.adapter) {
@@ -239,178 +204,60 @@ function clientServerTests(dbName) {
         return;
       }
       var url = getUrl('foobar.txt');
-      var docs = [
-        {"_id": "quux", "_rev": "1-q"}
-      ];
-      return remote.bulkDocs(docs, {new_edits: false}).then(function () {
-        return db.load(url, {proxy: dbs[1]});
-      }).then(function () {
+
+      return db.load(url, {proxy: dbs[1]}).then(function () {
         return db.info();
       }).then(function (info) {
         info.doc_count.should.equal(3);
-      }).then(function () {
-        return db.replicate.from(remote);
-      }).then(function () {
-        return db.info();
-      }).then(function (info) {
-        info.doc_count.should.equal(3, 'quux never loaded, because its seq is 1');
-        return db.allDocs({keys: ['quux']});
-      }).then(function (res) {
-        should.exist(res.rows[0].error, 'quux not in local');
-        return remote.allDocs({keys: ['quux']});
-      }).then(function (res) {
-        should.not.exist(res.rows[0].error, 'quux in remote');
-      });
-    });
-
-    it('transitions from initial to regular replication, w/ a filter', function () {
-      var url = getUrl('foobar.txt');
-      var docs1 = [
-        {"_id": "foo", "_rev": "1-x"},
-        {"_id": "bar", "_rev": "1-y"},
-        {"_id": "baz", "_rev": "1-w"}
-      ];
-      var docs2 = [
-        {
-          "_id": "baz",
-          "_rev": "2-z",
-          "_deleted": true,
-          "_revisions": {"start": 2, "ids": ["z", "w"]}
+        return plugin.getReplicationForDb(db, {proxy: dbs[1]});
+      }).then(function (repl) {
+        return Promise.all([
+          db.get(repl.checkpoint),
+          remote.get(repl.checkpoint)
+        ]);
+      }).then(function (docs) {
+        for (var doc of docs) {
+          doc.history.should.deep.equal([
+            { last_seq: '3-g1AAAABPeJzLYWBgYMxgTmEQTM4vTc5ISXLIyU9OzMnILy7JAUoxJTLksTD8B4KsDOZE5lygELu5maFFkqUBNi1ZAJQ9GHo' }
+          ]);
+          doc.last_seq.should.equal('3-g1AAAABPeJzLYWBgYMxgTmEQTM4vTc5ISXLIyU9OzMnILy7JAUoxJTLksTD8B4KsDOZE5lygELu5maFFkqUBNi1ZAJQ9GHo');
         }
-      ];
-      return remote.bulkDocs(docs1, {new_edits: false}).then(function () {
-        return remote.bulkDocs(docs2, {new_edits: false});
-      }).then(function () {
-        return db.load(url, {
-          proxy: dbs[1],
-          filter: function (doc) {
-            return !!doc;
-          }
-        });
-      }).then(function () {
-        return db.info();
-      }).then(function (info) {
-        info.doc_count.should.equal(3);
-      }).then(function () {
-        return db.replicate.from(remote, {
-          filter: function (doc) {
-            return !!doc;
-          }
-        });
-      }).then(function () {
-        return db.info();
-      }).then(function (info) {
-        info.doc_count.should.equal(2);
       });
     });
 
-    it('only fetches with since=seq when transitioning, /w a filter', function () {
-      var url = getUrl('foobar.txt');
-      var docs = [
-        {"_id": "quux", "_rev": "1-q"}
-      ];
-      return remote.bulkDocs(docs, {new_edits: false}).then(function () {
-        return db.load(url, {
-          proxy: dbs[1],
-          filter: function (doc) {
-            return !!doc;
-          }
-        });
-      }).then(function () {
-        return db.info();
-      }).then(function (info) {
-        info.doc_count.should.equal(3);
-      }).then(function () {
-        return db.replicate.from(remote, {
-          filter: function (doc) {
-            return !!doc;
-          }
-        });
-      }).then(function () {
-        return db.info();
-      }).then(function (info) {
-        info.doc_count.should.equal(3, 'quux never loaded, because its seq is 1');
-        return db.allDocs({keys: ['quux']});
-      }).then(function (res) {
-        should.exist(res.rows[0].error, 'quux not in local');
-        return remote.allDocs({keys: ['quux']});
-      }).then(function (res) {
-        should.not.exist(res.rows[0].error, 'quux in remote');
+    function countUnique (replications) {
+      var unique = {};
+      var count = 0;
+
+      for (var repl of replications) {
+        if (!(repl.checkpoint in unique)) {
+          unique[repl.checkpoint] = true;
+          count++;
+        }
+      }
+      return count;
+    }
+
+    it('gets a consistent replication checkpoint ID', function () {
+      return Promise.all([
+        plugin.getReplicationForDb(db, {proxy: dbs[1]}),
+        plugin.getReplicationForDb(db, {proxy: dbs[1]})
+      ]).then(function (replications) {
+        countUnique(replications).should.equal(1);
       });
     });
 
-    it('only fetches with since=seq when transitioning, /w queryparams', function () {
-      var url = getUrl('foobar.txt');
-      var docs = [
-        {"_id": "quux", "_rev": "1-q"}
-      ];
+    it('gets different checkpoint IDs when using different options', function () {
+      var filter = function (doc) { return !!doc; };
       var query_params = {batch_size: 10};
-      return remote.bulkDocs(docs, {new_edits: false}).then(function () {
-        return db.load(url, {
-          proxy: dbs[1],
-          query_params: query_params
-        });
-      }).then(function () {
-        return db.info();
-      }).then(function (info) {
-        info.doc_count.should.equal(3);
-      }).then(function () {
-        return db.replicate.from(remote, {
-          query_params: query_params
-        });
-      }).then(function () {
-        return db.info();
-      }).then(function (info) {
-        info.doc_count.should.equal(3, 'quux never loaded, because its seq is 1');
-        return db.allDocs({keys: ['quux']});
-      }).then(function (res) {
-        should.exist(res.rows[0].error, 'quux not in local');
-        return remote.allDocs({keys: ['quux']});
-      }).then(function (res) {
-        should.not.exist(res.rows[0].error, 'quux in remote');
-      });
-    });
 
-    it('only fetches with since=seq when transitioning, /w view', function () {
-      var url = getUrl('foobar.txt');
-      var viewDoc = {
-        "_id": "_design/mydesign",
-        "_rev": "1-q",
-        "language": "javascript",
-        "views": {
-          "myview": {
-            "map": function (doc) {
-              emit(null, doc);
-            }
-          }
-        }
-      };
-      var docs = [viewDoc, {"_id": "quux", "_rev": "1-q"}];
-      return remote.bulkDocs(docs, {new_edits: false}).then(function () {
-        return db.load(url, {
-          proxy: dbs[1],
-          filter: '_view',
-          view: 'mydesign/myview'
-        });
-      }).then(function () {
-        return db.info();
-      }).then(function (info) {
-        info.doc_count.should.equal(3);
-      }).then(function () {
-        return db.replicate.from(remote, {
-          filter: '_view',
-          view: 'mydesign/myview'
-        });
-      }).then(function () {
-        return db.info();
-      }).then(function (info) {
-        info.doc_count.should.equal(3, 'quux never loaded, because its seq is 1');
-        return db.allDocs({keys: ['quux']});
-      }).then(function (res) {
-        should.exist(res.rows[0].error, 'quux not in local');
-        return remote.allDocs({keys: ['quux']});
-      }).then(function (res) {
-        should.not.exist(res.rows[0].error, 'quux in remote');
+      return Promise.all([
+        plugin.getReplicationForDb(db, {proxy: dbs[1]}),
+        plugin.getReplicationForDb(db, {proxy: dbs[1], filter: filter}),
+        plugin.getReplicationForDb(db, {proxy: dbs[1], filter: '_view', view: 'mydesign/view'}),
+        plugin.getReplicationForDb(db, {proxy: dbs[1], filter: '_view', view: 'mydesign/another'})
+      ]).then(function (replications) {
+        countUnique(replications).should.equal(4);
       });
     });
 
