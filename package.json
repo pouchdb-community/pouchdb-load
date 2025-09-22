@@ -27,11 +27,14 @@
     "build": "mkdirp dist && browserify . -p bundle-collapser/plugin -s PouchDBLoad -t es3ify > dist/pouchdb.load.js && npm run min",
     "min": "uglifyjs dist/pouchdb.load.js -mc > dist/pouchdb.load.min.js",
     "test-local": "zuul --no-coverage --local 9000 --ui mocha-bdd test/test.js",
-    "coverage": "npm test --coverage && istanbul check-coverage --lines 100 --function 100 --statements 100 --branches 100"
+    "coverage": "npm test --coverage && istanbul check-coverage --lines 100 --function 100 --statements 100 --branches 100",
+    "dev-server": "./bin/dev-server.js",
+    "test-browser-playwright": "npx playwright test"
   },
   "dependencies": {
     "argsarray": "0.0.1",
     "inherits": "~2.0.1",
+    "playwright": "^1.55.0",
     "pouchdb-ajax": "5.4.5",
     "pouchdb-checkpointer": "5.4.5",
     "pouchdb-extend": "^0.1.2",
@@ -39,6 +42,8 @@
     "pouchdb-promise": "5.4.5"
   },
   "devDependencies": {
+    "@playwright/test": "^1.55.0",
+    "@types/node": "^24.5.2",
     "browserify": "^13.0.1",
     "bundle-collapser": "^1.2.1",
     "chai": "^3.5.0",

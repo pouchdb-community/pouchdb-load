@@ -220,3 +220,8 @@ To test in your own browser, or
     npm run test-browser
 
 To test in PhantomJS.
+
+### Automated browser tests with Playwright
+
+- Run `npm run dev-server` 
+- On another console, run `npm run test-browser-playwright`
