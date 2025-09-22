@@ -21,12 +21,10 @@
     "url": "https://github.com/nolanlawson/pouchdb-load/issues"
   },
   "scripts": {
-    "test-browser": "zuul --no-coverage --phantom --ui mocha-bdd test/test.js",
     "jshint": "jshint -c .jshintrc lib test/test.js",
     "test": "npm run jshint && istanbul test ./node_modules/mocha/bin/_mocha test/test.js",
     "build": "mkdirp dist && browserify . -p bundle-collapser/plugin -s PouchDBLoad -t > dist/pouchdb.load.js && npm run min",
     "min": "uglifyjs dist/pouchdb.load.js -mc > dist/pouchdb.load.min.js",
-    "test-local": "zuul --no-coverage --local 9000 --ui mocha-bdd test/test.js",
     "coverage": "npm test --coverage && istanbul check-coverage --lines 100 --function 100 --statements 100 --branches 100",
     "dev-server": "./bin/dev-server.js",
     "test-browser-playwright": "npx playwright test"
@@ -55,8 +53,7 @@
     "sauce-connect-launcher": "^0.4.2",
     "selenium-standalone": "^4.9.1",
     "uglify-js": "^3.19.3",
-    "watchify": "^3.7.0",
-    "zuul": "^3.10.1"
+    "watchify": "^3.7.0"
   },
   "browser": {
     "http-server": false
