@@ -30,7 +30,6 @@
     "test-browser-playwright": "npx playwright test"
   },
   "dependencies": {
-    "playwright": "^1.55.0",
     "pouchdb-ajax": "5.4.5",
     "pouchdb-checkpointer": "5.4.5",
     "pouchdb-extend": "^0.1.2",
@@ -48,6 +47,7 @@
     "mkdirp": "^3.0.1",
     "mocha": "^2.5.3",
     "nyc": "^17.1.0",
+    "playwright": "^1.55.0",
     "pouchdb-memory": "^1.0.0",
     "request": "^2.88.2",
     "uglify-js": "^3.19.3",
