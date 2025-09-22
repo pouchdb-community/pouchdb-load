@@ -32,7 +32,6 @@
     "test-browser-playwright": "npx playwright test"
   },
   "dependencies": {
-    "inherits": "~2.0.1",
     "playwright": "^1.55.0",
     "pouchdb-ajax": "5.4.5",
     "pouchdb-checkpointer": "5.4.5",
