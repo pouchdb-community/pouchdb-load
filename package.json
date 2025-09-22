@@ -46,7 +46,7 @@
     "http-server": "^0.5.5",
     "istanbul": "^0.2.7",
     "jshint": "^2.13.6",
-    "mkdirp": "^0.5.1",
+    "mkdirp": "^3.0.1",
     "mocha": "^2.5.3",
     "pouchdb-memory": "^1.0.0",
     "uglify-js": "^3.19.3",
