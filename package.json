@@ -49,6 +49,7 @@
     "mkdirp": "^3.0.1",
     "mocha": "^2.5.3",
     "pouchdb-memory": "^1.0.0",
+    "request": "^2.88.2",
     "uglify-js": "^3.19.3",
     "watchify": "^4.0.0"
   },
