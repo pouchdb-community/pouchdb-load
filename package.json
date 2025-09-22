@@ -50,7 +50,6 @@
     "mocha": "^2.5.3",
     "phantomjs-prebuilt": "^2.1.7",
     "pouchdb-memory": "^1.0.0",
-    "sauce-connect-launcher": "^0.4.2",
     "uglify-js": "^3.19.3",
     "watchify": "^4.0.0"
   },
