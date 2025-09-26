@@ -45,7 +45,7 @@
     "http-server": "^14.1.1",
     "jshint": "^2.13.6",
     "mkdirp": "^3.0.1",
-    "mocha": "^2.5.3",
+    "mocha": "^11.7.2",
     "nyc": "^17.1.0",
     "playwright": "^1.55.0",
     "pouchdb-memory": "^1.0.0",
