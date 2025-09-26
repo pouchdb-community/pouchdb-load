@@ -4,7 +4,7 @@ import { test, expect } from '@playwright/test';
 test('execute tests', async ({ page }) => {
   await page.goto('http://127.0.0.1:8001/test/index.html');
 
-  await page.waitForTimeout(15000);
+  await page.waitForTimeout(2000);
 
   const passingTests = await page.locator('#mocha-report > li > ul > li.test.pass').all();
   const failingTests = await page.locator('#mocha-report > li > ul > li.test.fail').all();
