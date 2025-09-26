@@ -38,6 +38,7 @@ function tests(dbName, dbType) {
 
     beforeEach(function () {
       this.timeout(30000);
+      dbName = dbType === 'http' ? dbName + new Date().getMilliseconds() : dbName;
       db = new Pouch(dbName);
       if (typeof process !== 'undefined'  && !process.browser) {
         server = httpServer.createServer();
@@ -132,6 +133,7 @@ function clientServerTests(dbName) {
   var db;
   var remote;
   var server;
+  var remoteDbName;
 
   describe('client-server: basic', function () {
     this.timeout(30000);
@@ -139,7 +141,8 @@ function clientServerTests(dbName) {
     beforeEach(function () {
       this.timeout(30000);
       db = new Pouch(dbs[0]);
-      remote = new Pouch(dbs[1]);
+      remoteDbName = dbs[1] + new Date().getMilliseconds();
+      remote = new Pouch(remoteDbName);
       if (typeof process !== 'undefined' && !process.browser) {
         server = httpServer.createServer();
         return new Promise(function (resolve) {
@@ -147,15 +150,14 @@ function clientServerTests(dbName) {
         });
       }
     });
-    afterEach(function () {
+
+    afterEach(async function () {
       this.timeout(30000);
-      return db.destroy().then(function () {
-        return remote.destroy();
-      }).then(function () {
-        if (typeof process !== 'undefined'  && !process.browser) {
-          server.close();
-        }
-      });
+      await db.destroy();
+      await remote.destroy();
+      if (typeof process !== 'undefined'  && !process.browser) {
+        server.close();
+      }
     });
 
     it('should load the dumpfile', function () {
@@ -175,11 +177,11 @@ function clientServerTests(dbName) {
     it('sets a checkpoint so that replication from the proxy resumes from the last seq in the dump file', function () {
       var url = getUrl('foobar.txt');
 
-      return db.load(url, {proxy: dbs[1]}).then(function() {
+      return db.load(url, {proxy: remoteDbName}).then(function() {
         return db.info();
       }).then(function (info) {
         info.doc_count.should.equal(3);
-        return plugin.getReplicationForDb(db, {proxy: dbs[1]});
+        return plugin.getReplicationForDb(db, {proxy: remoteDbName});
       }).then(function (repl) {
         return Promise.all([
           db.get(repl.checkpoint),
@@ -204,11 +206,11 @@ function clientServerTests(dbName) {
       }
       var url = getUrl('foobar.txt');
 
-      return db.load(url, {proxy: dbs[1]}).then(function () {
+      return db.load(url, {proxy: remoteDbName}).then(function () {
         return db.info();
       }).then(function (info) {
         info.doc_count.should.equal(3);
-        return plugin.getReplicationForDb(db, {proxy: dbs[1]});
+        return plugin.getReplicationForDb(db, {proxy: remoteDbName});
       }).then(function (repl) {
         return Promise.all([
           db.get(repl.checkpoint),
