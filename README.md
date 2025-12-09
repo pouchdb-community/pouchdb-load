@@ -211,12 +211,7 @@ You can also check for 100% code coverage using:
 
     npm run coverage
 
-### In the browser
+### Automated browser tests with Playwright
 
-    npm run test-local
-
-To test in your own browser, or
-
-    npm run test-browser
-
-To test in PhantomJS.
+- Run `npm run dev-server` 
+- On another console, run `npm run test-browser-playwright`
